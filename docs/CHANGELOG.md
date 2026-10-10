@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- [chore] 添加 Lightweight Charts 5.2.1 前端依赖，为交互式 K 线图接入做准备。
+
 - [修复] 系统设置中的外观与语言拆为独立卡片，改用原生下拉列表，避免主题选项被后续卡片遮挡。
 
 - [改进] 主题与界面语言切换移至系统设置的「外观与语言」，移除桌面和移动端主菜单入口，保留本机偏好及即时切换。

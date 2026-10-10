@@ -1074,6 +1074,7 @@ class StockAnalysisPipeline:
         if chip_data:
             current_price = getattr(realtime_quote, 'price', 0) if realtime_quote else 0
             enhanced['chip'] = {
+                **chip_data.to_dict(),
                 'profit_ratio': chip_data.profit_ratio,
                 'avg_cost': chip_data.avg_cost,
                 'concentration_90': chip_data.concentration_90,
@@ -3116,6 +3117,8 @@ class StockAnalysisPipeline:
             metadata={
                 "query_id": query_id,
                 "trigger_source": self.query_source,
+                **({"us_chip_enabled": bool(self.config.enable_chip_distribution)}
+                   if getattr(self.config, "massive_api_key", None) else {}),
             },
             portfolio_context=dict(portfolio_context) if isinstance(portfolio_context, dict) else None,
         )
@@ -3166,6 +3169,8 @@ class StockAnalysisPipeline:
             metadata={
                 "query_id": query_id,
                 "trigger_source": self.query_source,
+                **({"us_chip_enabled": bool(self.config.enable_chip_distribution)}
+                   if getattr(self.config, "massive_api_key", None) else {}),
             },
             portfolio_context=dict(portfolio_context) if isinstance(portfolio_context, dict) else None,
         )

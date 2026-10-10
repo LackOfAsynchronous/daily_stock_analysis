@@ -318,7 +318,8 @@ def _build_chip_block(artifacts: PipelineAnalysisArtifacts) -> AnalysisContextBl
     chip = _to_dict(artifacts.chip_data)
     if not chip:
         not_supported = (
-            artifacts.market in {"us", "hk", "jp", "kr", "tw"}
+            (artifacts.market in {"us", "hk", "jp", "kr", "tw"}
+             and not (artifacts.market == "us" and (artifacts.metadata or {}).get("us_chip_enabled")))
             or bool((artifacts.metadata or {}).get("chip_not_supported"))
         )
         status = (
@@ -341,19 +342,17 @@ def _build_chip_block(artifacts: PipelineAnalysisArtifacts) -> AnalysisContextBl
         )
 
     source = _source_text(chip.get("source"))
+    estimated = bool(chip.get("is_estimated"))
+    status = ContextFieldStatus.ESTIMATED if estimated else ContextFieldStatus.AVAILABLE
     return AnalysisContextBlock(
-        status=ContextFieldStatus.AVAILABLE,
+        status=status,
         items={
-            key: AnalysisContextItem(
-                status=ContextFieldStatus.AVAILABLE,
-                value=value,
-                source=source,
-            )
-            for key, value in chip.items()
-            if value is not None
+            key: AnalysisContextItem(status=status, value=value, source=source)
+            for key, value in chip.items() if value is not None
         },
         source=source,
-        metadata={"date": chip.get("date")} if chip.get("date") else {},
+        warnings=["volume_profile_estimate"] if estimated else [],
+        metadata={k: chip[k] for k in ("date", "estimation_method", "estimation_note", "sample_days") if chip.get(k)},
     )
 
 

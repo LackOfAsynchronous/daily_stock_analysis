@@ -304,6 +304,15 @@ const formatMissingReason = (
   return `${detail} (${TEXT[language].diagnosticCode}: ${reason})`;
 };
 
+const formatWarning = (warning: string, language: ReportLanguage): string => {
+  if (warning !== 'volume_profile_estimate') return warning;
+  return {
+    zh: '近120交易日成交成本分布估算，非真实持仓成本或获利盘；不包含当日未完成日线',
+    en: 'Volume-profile estimate over up to 120 completed sessions; not actual shareholder costs or profitable holders',
+    ko: '최대 120개 완료 거래일의 거래량 기반 비용 추정치이며 실제 보유 원가가 아닙니다',
+  }[language];
+};
+
 export const AnalysisContextSummary: React.FC<AnalysisContextSummaryProps> = ({
   overview,
   language = 'zh',
@@ -432,7 +441,7 @@ export const AnalysisContextSummary: React.FC<AnalysisContextSummaryProps> = ({
           {overview.warnings?.length ? (
             <div className="mb-3 home-subpanel p-3 text-xs leading-5 text-warning">
               <span className="font-medium">{text.warnings}: </span>
-              {overview.warnings.join(', ')}
+              {overview.warnings.map((warning) => formatWarning(warning, reportLanguage)).join(', ')}
             </div>
           ) : null}
 
@@ -466,7 +475,7 @@ export const AnalysisContextSummary: React.FC<AnalysisContextSummaryProps> = ({
 
                   {block.warnings?.length ? (
                     <p className="mt-2 text-xs leading-5 text-warning">
-                      {text.warnings}: {block.warnings.join(', ')}
+                      {text.warnings}: {block.warnings.map((warning) => formatWarning(warning, reportLanguage)).join(', ')}
                     </p>
                   ) : null}
                   {detail ? (

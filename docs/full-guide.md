@@ -1964,3 +1964,20 @@ worker 会把 `triggered`、`skipped`、`degraded`、`failed` 写入 `alert_trig
 Yahoo Finance 正常返回的行情来源为 `yfinance`；只有真正从失败源切换时才标记 `fallback_from`，Yahoo 失败后转 Stooq 同样保留该标记。未配置的长桥、Finnhub 等可选补充源直接跳过，不登记为失败尝试；已配置源发生真实请求失败仍保留降级提示，并区分前置源失败与补充源失败。旧报告的运行诊断会忽略有成功行情时的 `unavailable` 可选源记录，但已保存的数据上下文不会被重写。
 
 开启实时技术指标时，只在市场阶段标记为未完成日线时覆盖技术计算与报告的日线输入；盘前、盘后及休市阶段保留已取得的完整日线，最新报价仍保留在行情块。关闭实时技术指标也不会再覆盖报告的日线输入。美股、港股、日韩台市场不支持当前内置筹码接口，显示“不支持”并跳过该接口，不伪造筹码分布。真实缺失、过期和拉取失败不会被改成可用。需要重新分析才能看到新的数据上下文标记。
+
+
+### Massive 美股日线与成交成本估算
+
+设置 → 数据源 → **Massive API Key（美股）**，填入 Key 并保存；启用已有的“筹码分布分析”后重新分析美股。CLI/Docker 可设置 `MASSIVE_API_KEY`。未配置时继续原有数据源。
+
+`MASSIVE_REQUESTS_PER_MINUTE` 默认 5，适用于免费套餐；可在套餐许可范围内调整（1–120）。单进程按 Key 限流，不会等待或自动购买套餐；多进程/多设备共享 Key 应自行协调限额。401/403、429、网络错误会保留诊断并回退。数据缓存一小时（按 Key 隔离），同股票日线和估算复用一次抓取。
+
+Massive 仅用于美股个股已完成日线（拆股调整，美元）；为兼容免费日终套餐，始终排除纽约当天。实时行情及选股全市场快照继续使用现有来源；美股指数不路由到本接口。历史价格与当日实时技术指标仍由既有盘中逻辑合并。
+
+“筹码”输入显示 **估算**，来源 `massive_volume_profile`：近 120 个已完成交易日（最低 20 日），每日成交量在高低价区间均匀分配到 256 个价格桶，计算加权成本、90%/70%成本区间和低于参考收盘价的成交量比例。没有持仓换手留存模型，**不是实际投资者持仓成本、真实获利盘或机构持仓**，不适合直接套用 A 股筹码阈值。不足 20 日、数据无效或接口失败时不输出估算；已配置时显示缺失而非不支持。该模型与第三方券商算法可能不同，历史拆股后的成交量权重仍受供应商复权口径影响。
+
+Key 使用 Authorization 请求头，不写入 URL、日志或报告；设置接口按项目既有敏感字段机制遮罩，配置存储沿用本机 `.env`，不是加密保险箱。保存后新建分析任务生效。删除 Key 并保存即可停用，代码可回滚对应提交。
+
+Official references: [Custom Bars](https://massive.com/docs/rest/stocks/aggregates/custom-bars), [Pricing](https://massive.com/pricing).
+
+English: Set `MASSIVE_API_KEY` in Data sources and keep `MASSIVE_REQUESTS_PER_MINUTE=5` for Basic. Completed US daily bars only; no realtime claim or full-market snapshot replacement. With chip analysis enabled, a disclosed 20–120-session uniform daily-range volume profile supplies estimated costs. It is not actual shareholder cost basis or profitable-holder data. Invalid/unauthorized/rate-limited responses fall back, and incomplete estimates stay missing. Credentials use headers and existing local sensitive-config handling.

@@ -902,6 +902,15 @@ def _build_chip_structure_from_data(chip_data: Any, language: str = "zh") -> Dic
         pr = _safe_float(d.get("profit_ratio"))
         ac = d.get("avg_cost")
         c90 = _safe_float(d.get("concentration_90"))
+    estimated = getattr(chip_data, "is_estimated", False) if not isinstance(chip_data, dict) else chip_data.get("is_estimated")
+    if estimated:
+        english = normalize_report_language(language) in ("en", "ko")
+        return {
+            "profit_ratio": (f"Estimated volume below reference close: {pr:.1%}" if english else f"参考收盘价以下成交量比例（估算）：{pr:.1%}"),
+            "avg_cost": (f"Estimated {ac:.2f} USD" if english else f"估算 {ac:.2f} 美元"),
+            "concentration": (f"Estimated {c90:.2%}" if english else f"估算 {c90:.2%}"),
+            "chip_health": ("Volume-profile estimate; not actual holdings" if english else "成交成本估算，非真实持仓"),
+        }
     chip_health = _derive_chip_health(pr, c90, language=language)
     return {
         "profit_ratio": f"{pr:.1%}",
@@ -974,6 +983,12 @@ def fill_chip_structure_if_needed(result: "AnalysisResult", chip_data: Any) -> N
             chip_data,
             language=getattr(result, "report_language", "zh"),
         )
+        estimated = getattr(chip_data, "is_estimated", False) if not isinstance(chip_data, dict) else chip_data.get("is_estimated")
+        if estimated:
+            # Model output must not erase the estimate labels or invent chip health.
+            dp["chip_structure"] = filled
+            dp.pop("chip_unavailable_reason", None)
+            return
         # Start from a copy of cs to preserve any extra keys the LLM may have added
         merged = dict(cs)
         for k in _CHIP_KEYS:
@@ -4672,7 +4687,28 @@ Output strictly in the following JSON format. This is a complete Decision Dashbo
 """
 
         # 添加筹码分布数据
-        if 'chip' in context and english:
+        if 'chip' in context and context['chip'].get('is_estimated'):
+            chip = context['chip']
+            title = "Estimated traded-volume cost distribution (USD)" if english else "成交成本分布估算（美元）"
+            note = (
+                "A daily-range volume profile, NOT actual shareholder costs or actual profitable holders. "
+                "No turnover-retention model. Do not infer institutional holdings or apply A-share chip thresholds. "
+                "Label every related report conclusion as an estimate."
+                if english else
+                "这是日线区间成交量分布，不是真实持仓成本或真实获利盘，未模拟换手后的持仓留存。"
+                "不得据此推断主力持仓或直接套用A股筹码健康阈值；报告中涉及此数据的结论必须注明估算。"
+            )
+            prompt += f"""
+### {title}
+> {note}
+- Source: {chip.get('source')} / {chip.get('estimation_method')}
+- As of: {chip.get('date')}; sessions: {chip.get('sample_days')}
+- Volume-weighted estimated cost (USD): {chip.get('avg_cost')}
+- Estimated volume share below reference close: {chip.get('profit_ratio', 0):.1%}
+- Reference close (USD): {chip.get('reference_price')}
+- Estimated 90% cost interval (USD): {chip.get('cost_90_low')} - {chip.get('cost_90_high')}
+"""
+        elif 'chip' in context and english:
             chip = context['chip']
             profit_ratio = chip.get('profit_ratio', 0)
             prompt += f"""

@@ -642,6 +642,7 @@ class DataFetcherManager:
         "PytdxFetcher": {"cn"},
         "BaostockFetcher": {"cn"},
         "YfinanceFetcher": {"cn", "hk", "us", "jp", "kr", "tw"},
+        "MassiveFetcher": {"us"},
         "LongbridgeFetcher": {"hk", "us"},
         "FutuFetcher": {"hk"},
         "FinnhubFetcher": {"us"},
@@ -1871,6 +1872,10 @@ class DataFetcherManager:
         else:
             logger.debug("[数据源初始化] 跳过未配置的 FutuFetcher")
 
+        if (getattr(config, "massive_api_key", None) or "").strip():
+            from .massive_fetcher import MassiveFetcher
+            optional_fetchers.append(MassiveFetcher())
+
         finnhub_api_key = (getattr(config, "finnhub_api_key", None) or "").strip()
         if finnhub_api_key:
             from .finnhub_fetcher import FinnhubFetcher
@@ -1997,9 +2002,9 @@ class DataFetcherManager:
                 # 指数始终 YFinance 首选（Longbridge 不提供指数K线）
                 source_order = ["YfinanceFetcher", "FinnhubFetcher"]
             elif prefer_lb:
-                source_order = ["LongbridgeFetcher", "FinnhubFetcher", "AlphaVantageFetcher", "YfinanceFetcher"]
+                source_order = ["LongbridgeFetcher", "MassiveFetcher", "FinnhubFetcher", "AlphaVantageFetcher", "YfinanceFetcher"]
             else:
-                source_order = ["FinnhubFetcher", "AlphaVantageFetcher", "YfinanceFetcher", "LongbridgeFetcher"]
+                source_order = ["MassiveFetcher", "FinnhubFetcher", "AlphaVantageFetcher", "YfinanceFetcher", "LongbridgeFetcher"]
             # 消费各数据源当前优先级(含 *_PRIORITY 环境变量):默认优先级与内置链路一致,
             # 单项调整(如 YFINANCE_PRIORITY=0)即时生效;指数/Longbridge preferred 的锚定首选不被普通优先级覆盖
             pin_first = bool(is_us_index or prefer_lb)
@@ -2939,8 +2944,12 @@ class DataFetcherManager:
 
         # Bundled chip providers expose A-share data only. Unsupported markets
         # must not register empty responses or trip the shared chip breaker.
-        if _market_tag(stock_code) != "cn":
+        chip_market = _market_tag(stock_code)
+        if chip_market not in {"cn", "us"}:
             logger.debug("[筹码分布] %s 所属市场不支持筹码数据，跳过", stock_code)
+            return None
+
+        if chip_market == "us" and not getattr(config, "massive_api_key", None):
             return None
 
         circuit_breaker = get_chip_circuit_breaker()
@@ -2950,6 +2959,8 @@ class DataFetcherManager:
         for fetcher in self._get_fetchers_snapshot():
             # 只处理实现了筹码分布逻辑的数据源
             if not hasattr(fetcher, 'get_chip_distribution'):
+                continue
+            if (chip_market == 'us') != (fetcher.name == 'MassiveFetcher'):
                 continue
 
             fetcher_name = fetcher.name

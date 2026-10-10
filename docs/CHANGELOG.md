@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- [新功能] 接入 Massive 美股已完成日线，新增敏感 API Key 与请求限额设置；提供明确标注的成交成本分布估算，支持免费套餐与失败降级。
+
 - [修复] Yahoo 行情记录真实来源，跳过未配置的可选数据源；盘后保留完整日线技术指标，离岸市场筹码明确标为不支持。
 
 - [新功能] 选股页增加美股市场和三种美元口径策略，按市场过滤策略并标注股票池和数据限制。

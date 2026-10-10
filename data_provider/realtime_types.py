@@ -217,6 +217,13 @@ class ChipDistribution:
     cost_70_low: float = 0.0      # 70%筹码成本下限
     cost_70_high: float = 0.0     # 70%筹码成本上限
     concentration_70: float = 0.0  # 70%筹码集中度
+
+    is_estimated: bool = False
+    estimation_method: str = ""
+    estimation_note: str = ""
+    sample_days: int = 0
+    reference_price: float = 0.0
+    currency: str = ""
     
     def to_dict(self) -> Dict[str, Any]:
         """转换为字典"""
@@ -230,6 +237,10 @@ class ChipDistribution:
             'cost_90_high': self.cost_90_high,
             'concentration_90': self.concentration_90,
             'concentration_70': self.concentration_70,
+            **({'is_estimated': True, 'estimation_method': self.estimation_method,
+                'estimation_note': self.estimation_note, 'sample_days': self.sample_days,
+                'reference_price': self.reference_price, 'currency': self.currency}
+               if self.is_estimated else {}),
         }
     
     def get_chip_status(self, current_price: float) -> str:
@@ -242,6 +253,9 @@ class ChipDistribution:
         Returns:
             筹码状态描述
         """
+        if self.is_estimated:
+            return self.estimation_note
+
         status_parts = []
         
         # 获利比例分析

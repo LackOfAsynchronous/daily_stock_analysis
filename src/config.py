@@ -936,6 +936,8 @@ class Config:
     futu_hk_realtime_source_priority: str = "futu,longbridge,akshare,yfinance"
     mx_apikey: Optional[str] = None
     mx_priority: int = 6
+    massive_api_key: Optional[str] = None
+    massive_requests_per_minute: int = 5
     finnhub_api_key: Optional[str] = None
     alphavantage_api_key: Optional[str] = None
     longbridge_app_key: Optional[str] = None
@@ -1862,6 +1864,8 @@ class Config:
             futu_hk_realtime_source_priority=os.getenv('FUTU_HK_REALTIME_SOURCE_PRIORITY', 'futu,longbridge,akshare,yfinance'),
             mx_apikey=os.getenv('MX_APIKEY') or None,
             mx_priority=parse_env_int(os.getenv('MX_PRIORITY'), 6, field_name='MX_PRIORITY', minimum=0),
+            massive_api_key=os.getenv('MASSIVE_API_KEY') or None,
+            massive_requests_per_minute=parse_env_int(os.getenv('MASSIVE_REQUESTS_PER_MINUTE'), 5, field_name='MASSIVE_REQUESTS_PER_MINUTE', minimum=1, maximum=120),
             finnhub_api_key=os.getenv('FINNHUB_API_KEY') or None,
             alphavantage_api_key=os.getenv('ALPHAVANTAGE_API_KEY') or None,
             longbridge_app_key=os.getenv('LONGBRIDGE_APP_KEY') or None,

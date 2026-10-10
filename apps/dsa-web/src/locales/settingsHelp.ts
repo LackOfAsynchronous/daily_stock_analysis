@@ -276,6 +276,18 @@ const settingsHelpZhCN: SettingsHelpMap = {
     impact: ['影响部分 A 股基础数据、股票列表和相关增强数据获取。'],
     notes: ['不要把 token 提交到仓库或公开日志。'],
   },
+  'settings.data_source.MASSIVE_REQUESTS_PER_MINUTE': {
+    title: 'Massive requests per minute',
+    usage: '免费套餐保持5；付费套餐按实际限额调整。',
+    impact: ['进程内按Key限流，达到限额立即回退，不阻塞分析。'],
+    notes: ['多设备共享Key时需要共同遵守数据商限额。'],
+  },
+  'settings.data_source.MASSIVE_API_KEY': {
+    title: 'Massive API Key',
+    usage: '在 Massive 控制台创建 API Key 后填入并保存。重新分析美股即可使用；筹码分析需启用现有筹码开关。',
+    impact: ['提供美股已完成日线及近120交易日成交成本分布估算，不是真实持仓成本。'],
+    notes: ['免费套餐保持每分钟5次请求。实时行情仍由现有来源提供。Key 保存在本机配置。'],
+  },
   'settings.data_source.TICKFLOW_API_KEY': {
     title: 'TickFlow API Key',
     summary: '用于启用 TickFlow A 股日 K、实时行情、股票列表/名称与大盘复盘增强数据。',
@@ -1522,6 +1534,18 @@ const settingsHelpEnUS: SettingsHelpMap = {
     valueNotes: ['Available APIs depend on your Tushare permission level.'],
     impact: ['Affects some A-share base data, stock lists, and enrichment data.'],
     notes: ['Do not commit the token or print it in public logs.'],
+  },
+  'settings.data_source.MASSIVE_REQUESTS_PER_MINUTE': {
+    title: 'Massive requests per minute',
+    usage: 'Keep 5 for Basic; raise only if your plan permits it.',
+    impact: ['Per-key process-local limiting falls back immediately when exhausted.'],
+    notes: ['Coordinate limits when sharing a key across processes or devices.'],
+  },
+  'settings.data_source.MASSIVE_API_KEY': {
+    title: 'Massive API Key',
+    usage: 'Paste your Massive API key, save, and rerun a US stock. Enable the existing chip-analysis switch for cost estimates.',
+    impact: ['Provides completed daily bars and a 120-session volume-profile estimate, not actual shareholder costs.'],
+    notes: ['Keep 5 requests/minute for the free plan. Existing providers still supply realtime quotes. Credentials are stored in local configuration.'],
   },
   'settings.data_source.TICKFLOW_API_KEY': {
     title: 'TickFlow API Key',

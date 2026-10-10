@@ -49,6 +49,8 @@ const categoryDescriptionMap: Record<UiLanguage, Partial<Record<SystemConfigCate
 
 const fieldTitleMap: Record<string, string> = {
   STOCK_LIST: '自选股列表',
+  MASSIVE_API_KEY: 'Massive API Key（美股）',
+  MASSIVE_REQUESTS_PER_MINUTE: 'Massive 每分钟请求上限',
   TUSHARE_TOKEN: 'Tushare Token',
   BOCHA_API_KEYS: 'Bocha API Keys',
   TAVILY_API_KEYS: 'Tavily API Keys',
@@ -219,6 +221,8 @@ const fieldTitleMap: Record<string, string> = {
 
 const fieldDescriptionMap: Record<string, string> = {
   STOCK_LIST: '推荐使用英文逗号分隔股票代码；中文逗号、顿号、分号、空格和换行会在保存后规范为英文逗号。',
+  MASSIVE_API_KEY: '美股已完成日线与成交成本分布估算。支持免费套餐；不替代实时行情。留空时使用原有数据源。',
+  MASSIVE_REQUESTS_PER_MINUTE: '免费套餐保持 5；仅在套餐允许时提高。达到上限会降级，不会自动购买或升级。',
   TUSHARE_TOKEN: '用于接入 Tushare Pro 数据服务的凭据。',
   BOCHA_API_KEYS: '用于新闻检索的 Bocha 密钥，支持逗号分隔多个（最高优先级）。',
   TAVILY_API_KEYS: '用于新闻检索的 Tavily 密钥，支持逗号分隔多个。',

@@ -5,6 +5,7 @@ export type SystemConfigCategory =
   | 'notification'
   | 'system'
   | 'agent'
+  | 'scheduler'
   | 'backtest'
   | 'uncategorized';
 

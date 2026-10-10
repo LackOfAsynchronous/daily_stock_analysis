@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- [改进] 定时任务从系统设置独立为菜单分类，位于通知渠道与回测配置之间，集中管理执行时间、运行状态和超时参数。
+
 - [改进] 配置分类按基础设置、AI 模型配置、Agent 设置、数据源、通知渠道、回测配置、系统设置排列。
 
 - [改进] 移除配置分类菜单的字段数量徽标，简化设置导航。

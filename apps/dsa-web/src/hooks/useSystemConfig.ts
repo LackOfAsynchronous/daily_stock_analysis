@@ -31,6 +31,7 @@ const CATEGORY_DISPLAY_ORDER: Record<string, number> = {
   agent: 30,
   data_source: 40,
   notification: 50,
+  scheduler: 55,
   backtest: 60,
   system: 70,
   uncategorized: 99,
@@ -180,7 +181,15 @@ export function useSystemConfig() {
       token: string,
       options?: { preserveDirty?: boolean; committedKeys?: string[] },
     ) => {
-      const sorted = sortItemsByOrder(items);
+      // Scheduling is a UI category; configuration keys and API payloads stay unchanged.
+      const sorted = sortItemsByOrder(items.map((item) => ({
+        ...item,
+        schema: item.schema && (
+          item.key.startsWith('SCHEDULE_')
+          || item.key === 'DSA_RUNTIME_SCHEDULER_TIMEOUT_SECONDS'
+          || item.key === 'DSA_TIMEOUT_PARTIAL_NOTIFY'
+        ) ? { ...item.schema, category: 'scheduler' as const } : item.schema,
+      })));
       const previousServerMap = serverItemByKeyRef.current;
       const committedKeys = new Set(options?.committedKeys ?? []);
       const preserveDirty = options?.preserveDirty ?? false;

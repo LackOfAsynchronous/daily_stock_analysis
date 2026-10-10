@@ -991,6 +991,8 @@ const SettingsPage: React.FC = () => {
         }
         return true;
       })
+      : activeCategory === 'scheduler'
+        ? rawActiveItems.filter((item) => !SCHEDULER_SETTING_KEYS.has(item.key))
       : activeCategory === 'system'
         ? rawActiveItems.filter((item) => !SYSTEM_HIDDEN_KEYS.has(item.key))
       : activeCategory === 'agent'
@@ -1477,11 +1479,11 @@ const SettingsPage: React.FC = () => {
               </SettingsSectionCard>
             ) : null}
             {activeCategory === 'system' ? <AuthSettingsCard /> : null}
-            {activeCategory === 'system' || schedulerOverrideFromUi !== null ? (
-              <div hidden={activeCategory !== 'system'}>
+            {activeCategory === 'scheduler' || schedulerOverrideFromUi !== null ? (
+              <div hidden={activeCategory !== 'scheduler'}>
               <SchedulerSettingsCard
                 draftResetToken={localDraftResetToken}
-                items={itemsByCategory.system || []}
+                items={itemsByCategory.scheduler || []}
                 disabled={isSaving || isLoading || isImportingEnv}
                 issueByKey={issueByKey}
                 statusRefreshToken={schedulerStatusRefreshToken}

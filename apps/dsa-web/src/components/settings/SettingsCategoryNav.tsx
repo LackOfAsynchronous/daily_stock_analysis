@@ -1,5 +1,5 @@
 import type React from 'react';
-import { Bell, Bot, Database, Layers3, LineChart, Settings2, SlidersHorizontal } from 'lucide-react';
+import { Bell, Bot, Clock3, Database, Layers3, LineChart, Settings2, SlidersHorizontal } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useUiLanguage } from '../../contexts/UiLanguageContext';
 import { getCategoryDescription, getCategoryTitle } from '../../utils/systemConfigI18n';
@@ -19,6 +19,7 @@ const categoryIconMap: Partial<Record<SystemConfigCategory, LucideIcon>> = {
   ai_model: Layers3,
   notification: Bell,
   agent: Bot,
+  scheduler: Clock3,
   backtest: LineChart,
 };
 

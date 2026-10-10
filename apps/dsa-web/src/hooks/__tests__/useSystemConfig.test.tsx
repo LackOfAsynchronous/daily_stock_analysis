@@ -350,3 +350,27 @@ describe('useSystemConfig', () => {
     expect(result.current.dirtyCount).toBe(0);
   });
 });
+
+
+it('groups scheduling fields separately without changing API keys or losing drafts', async () => {
+  const keys = ['SCHEDULE_ENABLED', 'SCHEDULE_TIMES', 'SCHEDULE_RUN_IMMEDIATELY',
+    'DSA_RUNTIME_SCHEDULER_TIMEOUT_SECONDS', 'DSA_TIMEOUT_PARTIAL_NOTIFY', 'LOG_LEVEL'];
+  getConfig.mockResolvedValue({ ...sampleConfig, items: [
+    ...sampleConfig.items,
+    ...keys.map((key) => ({ ...sampleConfig.items[0], key, value: 'false',
+      schema: { ...sampleConfig.items[0].schema, key, category: 'system' } })),
+    ...['notification', 'backtest'].map((category) => ({ ...sampleConfig.items[0], key: category,
+      schema: { ...sampleConfig.items[0].schema, key: category, category } })),
+  ] });
+  const { result } = renderHook(() => useSystemConfig());
+  await act(async () => { await result.current.load(); });
+  expect(result.current.categories.map((item) => item.category)).toEqual([
+    'base', 'notification', 'scheduler', 'backtest', 'system',
+  ]);
+  expect(result.current.itemsByCategory.scheduler.map((item) => item.key).sort()).toEqual(keys.slice(0, -1).sort());
+  expect(result.current.itemsByCategory.system.map((item) => item.key)).toEqual(['LOG_LEVEL']);
+  act(() => { result.current.setDraftValue('SCHEDULE_TIMES', '09:30,16:00'); });
+  expect(result.current.getChangedItems()).toEqual([{ key: 'SCHEDULE_TIMES', value: '09:30,16:00' }]);
+  expect(result.current.itemsByCategory.scheduler.find((item) => item.key === 'SCHEDULE_TIMES')?.value)
+    .toBe('09:30,16:00');
+});

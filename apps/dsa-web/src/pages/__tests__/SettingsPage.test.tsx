@@ -355,6 +355,7 @@ const baseCategories = [
   { category: 'ai_model', title: 'AI', description: '模型配置', displayOrder: 3, fields: [] },
   { category: 'notification', title: 'Notification', description: '通知配置', displayOrder: 4, fields: [] },
   { category: 'agent', title: 'Agent', description: 'Agent 配置', displayOrder: 5, fields: [] },
+  { category: 'scheduler', title: 'Scheduled tasks', description: '定时任务', displayOrder: 6, fields: [] },
 ];
 
 type ConfigState = {
@@ -390,6 +391,7 @@ function buildSystemConfigState(overrides: ConfigOverride = {}) {
   return {
     categories: baseCategories,
     itemsByCategory: {
+      scheduler: [],
       system: [
         {
           key: 'ADMIN_AUTH_ENABLED',
@@ -1648,11 +1650,11 @@ describe('SettingsPage', () => {
   it('maps schedule settings to the scheduler card instead of generic raw fields', async () => {
     const configState = buildSystemConfigState();
     useSystemConfigMock.mockReturnValue(buildSystemConfigState({
-      activeCategory: 'system',
+      activeCategory: 'scheduler',
       itemsByCategory: {
         ...configState.itemsByCategory,
-        system: [
-          ...configState.itemsByCategory.system,
+        scheduler: [
+          ...configState.itemsByCategory.scheduler,
           {
             key: 'SCHEDULE_ENABLED',
             value: 'true',
@@ -1660,7 +1662,7 @@ describe('SettingsPage', () => {
             isMasked: false,
             schema: {
               key: 'SCHEDULE_ENABLED',
-              category: 'system',
+              category: 'scheduler',
               dataType: 'boolean',
               uiControl: 'switch',
               isSensitive: false,
@@ -1678,7 +1680,7 @@ describe('SettingsPage', () => {
             isMasked: false,
             schema: {
               key: 'SCHEDULE_TIME',
-              category: 'system',
+              category: 'scheduler',
               dataType: 'time',
               uiControl: 'time',
               isSensitive: false,
@@ -1696,7 +1698,7 @@ describe('SettingsPage', () => {
             isMasked: false,
             schema: {
               key: 'SCHEDULE_TIMES',
-              category: 'system',
+              category: 'scheduler',
               dataType: 'string',
               uiControl: 'text',
               isSensitive: false,
@@ -1714,7 +1716,7 @@ describe('SettingsPage', () => {
             isMasked: false,
             schema: {
               key: 'SCHEDULE_RUN_IMMEDIATELY',
-              category: 'system',
+              category: 'scheduler',
               dataType: 'boolean',
               uiControl: 'switch',
               isSensitive: false,
@@ -1723,24 +1725,6 @@ describe('SettingsPage', () => {
               options: [],
               validation: {},
               displayOrder: 12,
-            },
-          },
-          {
-            key: 'LOG_LEVEL',
-            value: 'INFO',
-            rawValueExists: true,
-            isMasked: false,
-            schema: {
-              key: 'LOG_LEVEL',
-              category: 'system',
-              dataType: 'string',
-              uiControl: 'select',
-              isSensitive: false,
-              isRequired: false,
-              isEditable: true,
-              options: ['INFO', 'DEBUG'],
-              validation: {},
-              displayOrder: 50,
             },
           },
         ],
@@ -1754,7 +1738,7 @@ describe('SettingsPage', () => {
     expect(screen.queryByTestId('settings-field-SCHEDULE_TIME')).not.toBeInTheDocument();
     expect(screen.queryByTestId('settings-field-SCHEDULE_TIMES')).not.toBeInTheDocument();
     expect(screen.queryByTestId('settings-field-SCHEDULE_RUN_IMMEDIATELY')).not.toBeInTheDocument();
-    expect(screen.getByTestId('settings-field-LOG_LEVEL')).toBeInTheDocument();
+    expect(screen.queryByTestId('settings-field-LOG_LEVEL')).not.toBeInTheDocument();
 
     fireEvent.change(screen.getByTestId('scheduler-time-input-0'), {
       target: { value: '10:30' },
@@ -1771,11 +1755,11 @@ describe('SettingsPage', () => {
     runSchedulerNow.mockRejectedValueOnce(new Error('A scheduled analysis is already running'));
     const configState = buildSystemConfigState();
     useSystemConfigMock.mockReturnValue(buildSystemConfigState({
-      activeCategory: 'system',
+      activeCategory: 'scheduler',
       itemsByCategory: {
         ...configState.itemsByCategory,
-        system: [
-          ...configState.itemsByCategory.system,
+        scheduler: [
+          ...configState.itemsByCategory.scheduler,
           {
             key: 'SCHEDULE_ENABLED',
             value: 'true',
@@ -1783,7 +1767,7 @@ describe('SettingsPage', () => {
             isMasked: false,
             schema: {
               key: 'SCHEDULE_ENABLED',
-              category: 'system',
+              category: 'scheduler',
               dataType: 'boolean',
               uiControl: 'switch',
               isSensitive: false,
@@ -1801,7 +1785,7 @@ describe('SettingsPage', () => {
             isMasked: false,
             schema: {
               key: 'SCHEDULE_TIMES',
-              category: 'system',
+              category: 'scheduler',
               dataType: 'string',
               uiControl: 'text',
               isSensitive: false,
@@ -1835,11 +1819,11 @@ describe('SettingsPage', () => {
       lastError: 'analysis failed',
     });
     useSystemConfigMock.mockReturnValue(buildSystemConfigState({
-      activeCategory: 'system',
+      activeCategory: 'scheduler',
       itemsByCategory: {
         ...configState.itemsByCategory,
-        system: [
-          ...configState.itemsByCategory.system,
+        scheduler: [
+          ...configState.itemsByCategory.scheduler,
           {
             key: 'SCHEDULE_ENABLED',
             value: 'true',
@@ -1847,7 +1831,7 @@ describe('SettingsPage', () => {
             isMasked: false,
             schema: {
               key: 'SCHEDULE_ENABLED',
-              category: 'system',
+              category: 'scheduler',
               dataType: 'boolean',
               uiControl: 'switch',
               isSensitive: false,
@@ -1865,7 +1849,7 @@ describe('SettingsPage', () => {
             isMasked: false,
             schema: {
               key: 'SCHEDULE_TIMES',
-              category: 'system',
+              category: 'scheduler',
               dataType: 'string',
               uiControl: 'text',
               isSensitive: false,
@@ -1898,11 +1882,11 @@ describe('SettingsPage', () => {
       lastError: null,
     });
     useSystemConfigMock.mockReturnValue(buildSystemConfigState({
-      activeCategory: 'system',
+      activeCategory: 'scheduler',
       itemsByCategory: {
         ...configState.itemsByCategory,
-        system: [
-          ...configState.itemsByCategory.system,
+        scheduler: [
+          ...configState.itemsByCategory.scheduler,
           {
             key: 'SCHEDULE_ENABLED',
             value: 'false',
@@ -1910,7 +1894,7 @@ describe('SettingsPage', () => {
             isMasked: false,
             schema: {
               key: 'SCHEDULE_ENABLED',
-              category: 'system',
+              category: 'scheduler',
               dataType: 'boolean',
               uiControl: 'switch',
               isSensitive: false,
@@ -1928,7 +1912,7 @@ describe('SettingsPage', () => {
             isMasked: false,
             schema: {
               key: 'SCHEDULE_TIMES',
-              category: 'system',
+              category: 'scheduler',
               dataType: 'string',
               uiControl: 'text',
               isSensitive: false,
@@ -1957,11 +1941,11 @@ describe('SettingsPage', () => {
   it('keeps local scheduler toggle edits when runtime and saved states are initially consistent', async () => {
     const configState = buildSystemConfigState();
     useSystemConfigMock.mockReturnValue(buildSystemConfigState({
-      activeCategory: 'system',
+      activeCategory: 'scheduler',
       itemsByCategory: {
         ...configState.itemsByCategory,
-        system: [
-          ...configState.itemsByCategory.system,
+        scheduler: [
+          ...configState.itemsByCategory.scheduler,
           {
             key: 'SCHEDULE_ENABLED',
             value: 'true',
@@ -1969,7 +1953,7 @@ describe('SettingsPage', () => {
             isMasked: false,
             schema: {
               key: 'SCHEDULE_ENABLED',
-              category: 'system',
+              category: 'scheduler',
               dataType: 'boolean',
               uiControl: 'switch',
               isSensitive: false,
@@ -1987,7 +1971,7 @@ describe('SettingsPage', () => {
             isMasked: false,
             schema: {
               key: 'SCHEDULE_TIMES',
-              category: 'system',
+              category: 'scheduler',
               dataType: 'string',
               uiControl: 'text',
               isSensitive: false,
@@ -2030,14 +2014,14 @@ describe('SettingsPage', () => {
       lastError: null,
     });
     useSystemConfigMock.mockReturnValue(buildSystemConfigState({
-      activeCategory: 'system',
+      activeCategory: 'scheduler',
       hasDirty: false,
       dirtyCount: 0,
       getChangedItems: () => [],
       itemsByCategory: {
         ...configState.itemsByCategory,
-        system: [
-          ...configState.itemsByCategory.system,
+        scheduler: [
+          ...configState.itemsByCategory.scheduler,
           {
             key: 'SCHEDULE_ENABLED',
             value: 'false',
@@ -2045,7 +2029,7 @@ describe('SettingsPage', () => {
             isMasked: false,
             schema: {
               key: 'SCHEDULE_ENABLED',
-              category: 'system',
+              category: 'scheduler',
               dataType: 'boolean',
               uiControl: 'switch',
               isSensitive: false,
@@ -2063,7 +2047,7 @@ describe('SettingsPage', () => {
             isMasked: false,
             schema: {
               key: 'SCHEDULE_TIMES',
-              category: 'system',
+              category: 'scheduler',
               dataType: 'string',
               uiControl: 'text',
               isSensitive: false,
@@ -2108,14 +2092,14 @@ describe('SettingsPage', () => {
       lastError: null,
     });
     useSystemConfigMock.mockReturnValue(buildSystemConfigState({
-      activeCategory: 'system',
+      activeCategory: 'scheduler',
       hasDirty: false,
       dirtyCount: 0,
       getChangedItems: () => [],
       itemsByCategory: {
         ...configState.itemsByCategory,
-        system: [
-          ...configState.itemsByCategory.system,
+        scheduler: [
+          ...configState.itemsByCategory.scheduler,
           {
             key: 'SCHEDULE_ENABLED',
             value: 'false',
@@ -2123,7 +2107,7 @@ describe('SettingsPage', () => {
             isMasked: false,
             schema: {
               key: 'SCHEDULE_ENABLED',
-              category: 'system',
+              category: 'scheduler',
               dataType: 'boolean',
               uiControl: 'switch',
               isSensitive: false,
@@ -2141,7 +2125,7 @@ describe('SettingsPage', () => {
             isMasked: false,
             schema: {
               key: 'SCHEDULE_TIMES',
-              category: 'system',
+              category: 'scheduler',
               dataType: 'string',
               uiControl: 'text',
               isSensitive: false,
@@ -2199,14 +2183,14 @@ describe('SettingsPage', () => {
       lastError: null,
     });
     useSystemConfigMock.mockReturnValue(buildSystemConfigState({
-      activeCategory: 'system',
+      activeCategory: 'scheduler',
       hasDirty: false,
       dirtyCount: 0,
       getChangedItems: () => [],
       itemsByCategory: {
         ...configState.itemsByCategory,
-        system: [
-          ...configState.itemsByCategory.system,
+        scheduler: [
+          ...configState.itemsByCategory.scheduler,
           {
             key: 'SCHEDULE_ENABLED',
             value: 'true',
@@ -2214,7 +2198,7 @@ describe('SettingsPage', () => {
             isMasked: false,
             schema: {
               key: 'SCHEDULE_ENABLED',
-              category: 'system',
+              category: 'scheduler',
               dataType: 'boolean',
               uiControl: 'switch',
               isSensitive: false,
@@ -2232,7 +2216,7 @@ describe('SettingsPage', () => {
             isMasked: false,
             schema: {
               key: 'SCHEDULE_TIMES',
-              category: 'system',
+              category: 'scheduler',
               dataType: 'string',
               uiControl: 'text',
               isSensitive: false,
@@ -2286,14 +2270,14 @@ describe('SettingsPage', () => {
       });
     save.mockResolvedValue({ success: true });
     useSystemConfigMock.mockReturnValue(buildSystemConfigState({
-      activeCategory: 'system',
+      activeCategory: 'scheduler',
       hasDirty: true,
       dirtyCount: 1,
       getChangedItems: () => [{ key: 'SCHEDULE_ENABLED', value: 'true' }],
       itemsByCategory: {
         ...configState.itemsByCategory,
-        system: [
-          ...configState.itemsByCategory.system,
+        scheduler: [
+          ...configState.itemsByCategory.scheduler,
           {
             key: 'SCHEDULE_ENABLED',
             value: 'false',
@@ -2301,7 +2285,7 @@ describe('SettingsPage', () => {
             isMasked: false,
             schema: {
               key: 'SCHEDULE_ENABLED',
-              category: 'system',
+              category: 'scheduler',
               dataType: 'boolean',
               uiControl: 'switch',
               isSensitive: false,
@@ -2319,7 +2303,7 @@ describe('SettingsPage', () => {
             isMasked: false,
             schema: {
               key: 'SCHEDULE_TIMES',
-              category: 'system',
+              category: 'scheduler',
               dataType: 'string',
               uiControl: 'text',
               isSensitive: false,
@@ -2677,12 +2661,12 @@ describe('SettingsPage', () => {
       updatedKeys: ['SCHEDULE_ENABLED', 'SCHEDULE_TIMES'],
       warnings: [],
     });
-    useSystemConfigMock.mockReturnValue(buildSystemConfigState({
-      activeCategory: 'system',
+    const importConfigState = buildSystemConfigState({
+      activeCategory: 'scheduler',
       itemsByCategory: {
         ...configState.itemsByCategory,
-        system: [
-          ...configState.itemsByCategory.system,
+        scheduler: [
+          ...configState.itemsByCategory.scheduler,
           {
             key: 'SCHEDULE_ENABLED',
             value: 'false',
@@ -2690,7 +2674,7 @@ describe('SettingsPage', () => {
             isMasked: false,
             schema: {
               key: 'SCHEDULE_ENABLED',
-              category: 'system',
+              category: 'scheduler',
               dataType: 'boolean',
               uiControl: 'switch',
               isSensitive: false,
@@ -2708,7 +2692,7 @@ describe('SettingsPage', () => {
             isMasked: false,
             schema: {
               key: 'SCHEDULE_TIMES',
-              category: 'system',
+              category: 'scheduler',
               dataType: 'string',
               uiControl: 'text',
               isSensitive: false,
@@ -2721,13 +2705,17 @@ describe('SettingsPage', () => {
           },
         ],
       },
-    }));
+    });
+    useSystemConfigMock.mockReturnValue(importConfigState);
 
-    const { container } = renderSettingsPage();
+    const page = renderSettingsPage();
+    const { container } = page;
 
     await waitFor(() => expect(getSchedulerStatus).toHaveBeenCalledTimes(1));
     expect(await screen.findByText('未启用')).toBeInTheDocument();
 
+    useSystemConfigMock.mockReturnValue({ ...importConfigState, activeCategory: 'system' });
+    page.rerenderSettingsPage();
     vi.clearAllMocks();
 
     const input = container.querySelector('input[type="file"]');
@@ -2741,6 +2729,8 @@ describe('SettingsPage', () => {
 
     await waitFor(() => expect(importEnv).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(load).toHaveBeenCalledTimes(1));
+    useSystemConfigMock.mockReturnValue(importConfigState);
+    page.rerenderSettingsPage();
     await waitFor(() => expect(getSchedulerStatus).toHaveBeenCalledTimes(1));
     expect(await screen.findByText('已启用')).toBeInTheDocument();
   });
@@ -3086,7 +3076,7 @@ describe('SettingsPage', () => {
           ...initial,
           itemsByCategory: {
             ...initial.itemsByCategory,
-            system: [...initial.itemsByCategory.system, {
+            scheduler: [ {
               ...schedulerTemplate, key: 'SCHEDULE_ENABLED', value: 'false',
               schema: { ...(schedulerTemplate.schema as Record<string, unknown>), key: 'SCHEDULE_ENABLED' },
             }],
@@ -3097,11 +3087,13 @@ describe('SettingsPage', () => {
         fireEvent.change(screen.getByRole('combobox', { name: '选择 API 服务商' }), { target: { value: 'primary' } });
       fireEvent.click(await screen.findByRole('button', { name: /primary/i }));
         fireEvent.change(await screen.findByLabelText('渠道名称'), { target: { value: '' } });
-        useSystemConfigMock.mockReturnValue({ ...configState, activeCategory: 'system' });
+        useSystemConfigMock.mockReturnValue({ ...configState, activeCategory: 'scheduler' });
         page.rerenderSettingsPage();
         await waitFor(() => expect(screen.getByTestId('scheduler-enabled-checkbox')).toBeChecked());
         fireEvent.click(screen.getByTestId('scheduler-enabled-checkbox'));
         await waitFor(() => expect(screen.getByTestId('scheduler-enabled-checkbox')).not.toBeChecked());
+        useSystemConfigMock.mockReturnValue({ ...configState, activeCategory: 'system' });
+        page.rerenderSettingsPage();
         fireEvent.click(screen.getByRole('button', { name: '导入 .env' }));
         expect(await screen.findByText('导入会覆盖当前草稿')).toBeInTheDocument();
         fireEvent.click(screen.getByRole('button', { name: '继续导入' }));
@@ -3125,11 +3117,14 @@ describe('SettingsPage', () => {
           await act(async () => pendingImport.resolve({ updatedKeys: ['STOCK_LIST'] }));
           await waitFor(() => expect(resetDraft).toHaveBeenCalledTimes(1));
           await waitFor(() => expect(beforeUnloadListeners).toHaveLength(0));
-          expect(screen.getByTestId('scheduler-enabled-checkbox')).toBeChecked();
-          expect(screen.getByRole('button', { name: /保存配置/ })).toBeDisabled();
           if (outcome === 'reload-failed') {
             expect(screen.getByText('配置已导入但刷新失败')).toBeInTheDocument();
           }
+          useSystemConfigMock.mockReturnValue({ ...configState, activeCategory: 'scheduler' });
+          page.rerenderSettingsPage();
+          await waitFor(() => expect(screen.getByTestId('scheduler-enabled-checkbox')).toBeChecked());
+          expect(screen.getByTestId('scheduler-enabled-checkbox')).toBeChecked();
+          expect(screen.getByRole('button', { name: /保存配置/ })).toBeDisabled();
         }
         useSystemConfigMock.mockReturnValue(configState);
         page.rerenderSettingsPage();

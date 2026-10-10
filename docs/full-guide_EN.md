@@ -1757,3 +1757,10 @@ For more questions, please [submit an Issue](https://github.com/ZhuLinsen/daily_
 Enable `LOCAL_CODEX_MODE=true` under Settings → AI models to route reports, scheduled analysis, market reviews, screening ranking and enrichment, chat, multi-agent, Deep Research, context compression and stock image extraction through signed-in local Codex. Existing model settings are retained and restored when disabled. No API fallback is used. Explicit API connection tests still test their selected channel.
 
 Codex must be on the backend PATH. Inference uses isolated ephemeral App Server sessions, at most two concurrently. Tool selections are JSON Schema validated and executed by the existing DSA runner with stock-scope checks. Market data continues to use its configured providers. Network and Codex quota are required; prompts, tool results and images may be processed by the service configured in Codex. Unsupported vision, quota and network errors fail explicitly. DSA does not read Codex credentials or assume unknown usage costs are zero.
+
+
+### Private investment research context
+
+Global Codex reads `data/user_memory/USER_INVESTMENT_CONTEXT.md` beside the runtime `.env` on every inference (UTF-8, at most 64 KiB). Desktop storage is in the application's user-data directory, outside the app bundle. File presence opts in; edits apply to the next call and removing it disables personalization. Without `ENV_FILE`, the project root is used. Unreadable, invalid or oversized existing files fail explicitly instead of silently losing context boundaries.
+
+Only store material the user authorizes sending to the configured Codex service. It is quoted reference data: retain historical dates, never promote old holdings, trading plans or monitoring descriptions to current state, and preserve task schemas, hard screening constraints and tool permissions. Keep personal files out of Git (`data/` is ignored). This is independent of `AGENT_MEMORY_ENABLED`, which calibrates prior analysis outcomes.

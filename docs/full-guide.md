@@ -1987,3 +1987,10 @@ English: Set `MASSIVE_API_KEY` in Data sources and keep `MASSIVE_REQUESTS_PER_MI
 在设置 → AI 模型开启“全局使用本机 Codex”，或配置 `LOCAL_CODEX_MODE=true`。覆盖普通/定时报告、大盘复盘、选股智能重排、选股深度补充、问股、多 Agent、Deep Research、上下文压缩和股票图片识别。原有模型设置保留，关闭开关即恢复。开启时不回退到 DeepSeek 或其他 API 模型；手动的 API 连接测试仍测试所选 API 渠道。
 
 需安装并登录 Codex，且后端 PATH 能找到 `codex`。通过隔离的 App Server 推理，工具选择使用经过 JSON Schema 验证的结构化结果，工具仍由 DSA 原有执行器执行并检查股票作用域。不是 Codex 自行操作电脑。每次推理使用临时会话，最多同时运行 2 个；额度、网络或模型图片能力不足会明确失败。价格数据仍由行情源提供。使用 Codex 配置的模型和服务，问题、数据和图片可能发送到该服务，DSA 不读取其凭据。未知 token 成本不记为免费。
+
+
+### 私人投资研究记忆
+
+全局 Codex 每次推理会读取运行时 `.env` 同目录下的 `data/user_memory/USER_INVESTMENT_CONTEXT.md`（UTF-8，最大 64 KiB）；桌面端位于应用用户数据目录，不在 App 安装包中。存在该文件即启用个性化，编辑后下次调用生效，移走文件即可停用。缺省 `.env` 时使用项目目录。已有文件不可读、编码错误或超限会明确失败，避免静默丢失资料边界。
+
+仅保存用户授权提供给 Codex 的资料：相关内容会随请求发送到 Codex 配置的服务。文件按引用资料处理，保留历史时间戳，不将历史持仓、交易方案或监控描述当作当前状态，不覆盖任务输出格式、选股硬筛条件或工具权限。私人资料不要提交 Git；仓库默认忽略 `data/`。这与 `AGENT_MEMORY_ENABLED` 的历史分析效果校准功能相互独立。

@@ -584,20 +584,19 @@ function hangDesktopUpdateCheck() {
 }
 
 describe('SettingsPage', () => {
-  it('shows theme and language controls only in system settings', () => {
+  it('shows separate appearance and language dropdowns only in system settings', () => {
     const configState = buildSystemConfigState({ activeCategory: 'system' });
     useSystemConfigMock.mockReturnValue(configState);
     const page = renderSettingsPage();
-    expect(screen.getByRole('heading', { name: '外观与语言' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '切换主题' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '切换界面语言' })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: '切换主题' }));
-    expect(screen.getByRole('menu', { name: '主题模式' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '外观' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '语言' })).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: '主题' })).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: '界面语言' })).toBeInTheDocument();
     for (const activeCategory of ['base', 'ai_model', 'agent', 'notification', 'scheduler', 'backtest']) {
       useSystemConfigMock.mockReturnValue({ ...configState, activeCategory });
       page.rerenderSettingsPage();
-      expect(screen.queryByRole('button', { name: '切换主题' })).not.toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: '切换界面语言' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('combobox', { name: '主题' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('combobox', { name: '界面语言' })).not.toBeInTheDocument();
     }
   });
 

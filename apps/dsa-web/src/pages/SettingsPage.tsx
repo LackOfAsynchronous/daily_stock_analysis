@@ -1,6 +1,5 @@
 import type React from 'react';
-import { ThemeToggle } from '../components/theme/ThemeToggle';
-import { UiLanguageToggle } from '../components/i18n/UiLanguageToggle';
+import { AppearanceSettings } from '../components/settings/AppearanceSettings';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CheckCircle2, ChevronDown, CircleAlert, CircleDashed, Clock, Play, Plus, RefreshCw, Trash2 } from 'lucide-react';
 import { useBlocker, useLocation } from 'react-router-dom';
@@ -1480,23 +1479,7 @@ const SettingsPage: React.FC = () => {
                 ) : null}
               </SettingsSectionCard>
             ) : null}
-            {activeCategory === 'system' ? (
-              <SettingsSectionCard
-                title={t('settings.appearanceTitle')}
-                description={t('settings.appearanceDescription')}
-              >
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="flex items-center justify-between gap-3 rounded-xl border settings-border p-3">
-                    <span className="text-sm font-medium text-foreground">{t('theme.theme')}</span>
-                    <ThemeToggle />
-                  </div>
-                  <div className="flex items-center justify-between gap-3 rounded-xl border settings-border p-3">
-                    <span className="text-sm font-medium text-foreground">{t('language.uiLanguage')}</span>
-                    <UiLanguageToggle />
-                  </div>
-                </div>
-              </SettingsSectionCard>
-            ) : null}
+            {activeCategory === 'system' ? <AppearanceSettings /> : null}
             {activeCategory === 'system' ? <AuthSettingsCard /> : null}
             {activeCategory === 'scheduler' || schedulerOverrideFromUi !== null ? (
               <div hidden={activeCategory !== 'scheduler'}>

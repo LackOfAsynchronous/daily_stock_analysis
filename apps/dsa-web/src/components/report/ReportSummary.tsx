@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import type { AnalysisResult, AnalysisReport } from '../../types/analysis';
 import { ReportOverview } from './ReportOverview';
 import { ReportStrategy } from './ReportStrategy';
@@ -8,6 +8,8 @@ import { ReportDiagnostics } from './ReportDiagnostics';
 import { AnalysisContextSummary } from './AnalysisContextSummary';
 import { MarketReviewReportView } from './MarketReviewReportView';
 import { getReportText, normalizeReportLanguage } from '../../utils/reportLanguage';
+
+const StockCandlestickChart = lazy(() => import('../charts/StockCandlestickChart'));
 
 interface ReportSummaryProps {
   data: AnalysisResult | AnalysisReport;
@@ -67,6 +69,12 @@ export const ReportSummary: React.FC<ReportSummaryProps> = ({
         isHistory={isHistory}
         watchlist={watchlist}
       />
+
+      {meta.stockCode ? (
+        <Suspense fallback={null}>
+          <StockCandlestickChart key={meta.stockCode} stockCode={meta.stockCode} />
+        </Suspense>
+      ) : null}
 
       {/* 策略点位区 */}
       <ReportStrategy strategy={strategy} language={reportLanguage} />

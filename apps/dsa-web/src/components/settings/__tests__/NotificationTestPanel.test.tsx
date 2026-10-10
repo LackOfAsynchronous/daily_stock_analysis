@@ -39,6 +39,16 @@ describe('NotificationTestPanel', () => {
     });
   });
 
+  it('uses the configured channel without a second selector or automatic send', async () => {
+    const props = { items: [], maskToken: '******' };
+    const view = render(<NotificationTestPanel {...props} selectedChannel="telegram" />);
+    expect(screen.queryByLabelText('渠道')).not.toBeInTheDocument();
+    view.rerender(<NotificationTestPanel {...props} selectedChannel="slack" />);
+    expect(testNotificationChannel).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: /发送测试/ }));
+    await waitFor(() => expect(testNotificationChannel).toHaveBeenCalledWith(expect.objectContaining({ channel: 'slack' })));
+  });
+
   it('submits draft notification items and renders attempt details', async () => {
     render(
       <NotificationTestPanel

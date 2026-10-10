@@ -26,13 +26,14 @@ import {
   SettingsSectionCard,
 } from '../components/settings';
 import { ConnectionFields, ProviderSelector } from '../components/settings/ConnectionFields';
-import { CLI_KEYS, DATA_PROVIDERS, apiProviderForKey, dataProviderForKey } from '../components/settings/connectionSettingsGroups';
+import { CLI_KEYS, DATA_PROVIDERS, NOTIFICATION_CHANNELS, NOTIFICATION_BASIC_KEYS, apiProviderForKey, dataProviderForKey, notificationChannelForKey } from '../components/settings/connectionSettingsGroups';
 import { LLM_PROVIDER_TEMPLATES } from '../components/settings/llmProviderTemplates';
 import { WEB_BUILD_INFO } from '../utils/constants';
 import { parseStockListValue } from '../utils/stockList';
 import { getCategoryDescription, getCategoryTitle } from '../utils/systemConfigI18n';
 import type {
   ConfigValidationIssue,
+  NotificationTestChannel,
   SchedulerStatusResponse,
   SetupStatusCheck,
   SetupStatusResponse,
@@ -853,6 +854,8 @@ const SettingsPage: React.FC = () => {
 
   const [selectedApiProvider, setSelectedApiProvider] = useState('');
   const [selectedDataProvider, setSelectedDataProvider] = useState('');
+  const [selectedNotificationChannel, setSelectedNotificationChannel] = useState('');
+  const notificationItems = itemsByCategory.notification || [];
   const aiItems = itemsByCategory.ai_model || [];
   const dataItems = itemsByCategory.data_source || [];
   const apiItems = [...aiItems, ...dataItems.filter((item) => item.key === 'ANSPIRE_API_KEYS')];
@@ -1247,7 +1250,28 @@ const SettingsPage: React.FC = () => {
       </details>
     </SettingsSectionCard>
   );
-  const activeConfigPanel = activeCategory === 'data_source' ? (
+  const activeConfigPanel = activeCategory === 'notification' ? (
+    <SettingsSectionCard title="通知渠道" description="先选择渠道，再配置接收地址、密钥及高级设置。可同时保留多个通知渠道。">
+      <ProviderSelector label="选择通知渠道" value={selectedNotificationChannel} onChange={setSelectedNotificationChannel}
+        options={NOTIFICATION_CHANNELS.map(([value, label]) => ({ value, label }))}
+        disabled={isSaving || isLoading || isImportingEnv}
+        placeholderText="先选择通知渠道，再填写对应配置。切换选择不会启停渠道或清除已有配置。">
+        <ConnectionFields items={notificationItems.filter((item) => notificationChannelForKey(item.key) === selectedNotificationChannel)}
+          basicKeys={NOTIFICATION_BASIC_KEYS} issues={issueByKey} onChange={setDraftValue} disabled={isSaving || isImportingEnv} />
+        <details className="rounded-xl border settings-border p-4"><summary className="cursor-pointer text-sm font-medium">发送测试</summary>
+          <SettingsPanelErrorBoundary title={t('settings.notificationTest')}
+            resetKey={`notification-test:${configVersion}:${selectedNotificationChannel}`} diagnosticHint={settingsPanelDiagnosticHint}>
+            <NotificationTestPanel key={selectedNotificationChannel} selectedChannel={selectedNotificationChannel as NotificationTestChannel}
+              items={notificationItems.map((item) => ({ key: item.key, value: String(item.value ?? '') }))}
+              maskToken={maskToken} disabled={isSaving || isLoading || isImportingEnv} />
+          </SettingsPanelErrorBoundary>
+        </details>
+      </ProviderSelector>
+      <details className="rounded-xl border settings-border p-4"><summary className="cursor-pointer text-sm font-medium">通用高级设置 · 报告与推送策略</summary>
+        {renderConnectionFields(notificationItems.filter((item) => !notificationChannelForKey(item.key)), undefined, false)}
+      </details>
+    </SettingsSectionCard>
+  ) : activeCategory === 'data_source' ? (
     <SettingsSectionCard title="数据源" description="分别配置行情与新闻来源。选择下拉项只切换配置视图，不改变数据源优先级。">
       <ProviderSelector label="选择数据源" value={selectedDataProvider} onChange={setSelectedDataProvider} disabled={isSaving || isImportingEnv}
         options={DATA_PROVIDERS.map(([value, label]) => ({ value, label }))}>
@@ -1688,19 +1712,6 @@ const SettingsPage: React.FC = () => {
             ) : null}
             {activeCategory === 'system' && passwordChangeable ? (
               <ChangePasswordCard />
-            ) : null}
-            {activeCategory === 'notification' ? (
-              <SettingsPanelErrorBoundary
-                title={t('settings.notificationTest')}
-                resetKey={`notification-test:${configVersion}`}
-                diagnosticHint={settingsPanelDiagnosticHint}
-              >
-                <NotificationTestPanel
-                  items={rawActiveItems.map((item) => ({ key: item.key, value: String(item.value ?? '') }))}
-                  maskToken={maskToken}
-                  disabled={isSaving || isLoading || isImportingEnv}
-                />
-              </SettingsPanelErrorBoundary>
             ) : null}
             {activeCategory === 'agent' ? (
               <SettingsPanelErrorBoundary

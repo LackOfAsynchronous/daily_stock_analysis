@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { ConnectionFields, ProviderSelector } from '../ConnectionFields';
-import { apiProviderForKey, dataProviderForKey, CLI_KEYS } from '../connectionSettingsGroups';
+import { apiProviderForKey, dataProviderForKey, CLI_KEYS, notificationChannelForKey, NOTIFICATION_BASIC_KEYS } from '../connectionSettingsGroups';
 import type { SystemConfigItem } from '../../../types/systemConfig';
 
 it('requires a provider before exposing configuration children', () => {
@@ -36,4 +36,20 @@ describe('field grouping', () => {
     expect(screen.getByDisplayValue('******')).toHaveAttribute('type','password');
     expect(screen.getByText('高级配置').closest('details')).not.toHaveAttribute('open');
   });
+});
+
+it('keeps notification recipients basic and channel-specific tuning advanced', () => {
+  expect(notificationChannelForKey('TELEGRAM_CHAT_ID')).toBe('telegram');
+  expect(notificationChannelForKey('FEISHU_APP_SECRET')).toBe('feishu');
+  expect(notificationChannelForKey('CUSTOM_WEBHOOK_BODY_TEMPLATE')).toBe('custom');
+  expect(notificationChannelForKey('NOTIFICATION_REPORT_CHANNELS')).toBeUndefined();
+  const items = ['TELEGRAM_CHAT_ID', 'TELEGRAM_MESSAGE_THREAD_ID'].map((key) => ({
+    key, value: '123', rawValueExists: true, isMasked: false,
+    schema: { key, uiControl: 'text', isEditable: true },
+  })) as SystemConfigItem[];
+  const { container } = render(<ConnectionFields items={items} issues={{}} onChange={vi.fn()} basicKeys={NOTIFICATION_BASIC_KEYS} />);
+  expect(container.querySelector('#setting-TELEGRAM_CHAT_ID')).toBeVisible();
+  expect(container.querySelector('#setting-TELEGRAM_MESSAGE_THREAD_ID')).not.toBeVisible();
+  fireEvent.click(screen.getByText('高级配置'));
+  expect(container.querySelector('#setting-TELEGRAM_MESSAGE_THREAD_ID')).toBeVisible();
 });

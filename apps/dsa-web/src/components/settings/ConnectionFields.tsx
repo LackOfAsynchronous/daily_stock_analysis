@@ -12,11 +12,12 @@ interface Props {
   title?: string;
   description?: string;
   collapseAdvanced?: boolean;
+  basicKeys?: ReadonlySet<string>;
 }
-export function ConnectionFields({ items, onChange, issues, disabled, title, description, collapseAdvanced = true }: Props) {
+export function ConnectionFields({ items, onChange, issues, disabled, title, description, collapseAdvanced = true, basicKeys }: Props) {
   const field = (item: SystemConfigItem) => <SettingsField key={item.key} item={item} value={item.value}
     disabled={disabled} onChange={onChange} issues={issues[item.key] || []} />;
-  const basic = items.filter((item) => !collapseAdvanced || /(?:API_KEYS?|TOKEN|HOST|BASE_URL|BASE_URLS|MODEL)$/.test(item.key));
+  const basic = items.filter((item) => !collapseAdvanced || (basicKeys ? basicKeys.has(item.key) : /(?:API_KEYS?|TOKEN|HOST|BASE_URL|BASE_URLS|MODEL)$/.test(item.key)));
   const advanced = items.filter((item) => !basic.includes(item));
   return <div className="space-y-3">
     {title ? <h3 className="text-sm font-semibold text-foreground">{title}</h3> : null}
@@ -28,15 +29,15 @@ export function ConnectionFields({ items, onChange, issues, disabled, title, des
     </details> : null}
   </div>;
 }
-export function ProviderSelector({ label, value, onChange, options, disabled, children }: {
+export function ProviderSelector({ label, value, onChange, options, disabled, children, placeholderText }: {
   label: string; value: string; onChange: (value: string) => void;
-  options: { value: string; label: string }[]; disabled?: boolean; children?: ReactNode;
+  options: { value: string; label: string }[]; disabled?: boolean; children?: ReactNode; placeholderText?: string;
 }) {
   return <div className="space-y-4">
     <Select label={label} value={value} onChange={onChange} options={[{ value: '', label: '请选择…' }, ...options]}
       disabled={disabled} />
     {value ? children : <p className="rounded-xl border border-dashed settings-border p-5 text-sm text-muted-text">
-      先选择服务商，再配置对应密钥和参数。切换选择不会更改已保存的配置。
+      {placeholderText || '先选择服务商，再配置对应密钥和参数。切换选择不会更改已保存的配置。'}
     </p>}
   </div>;
 }

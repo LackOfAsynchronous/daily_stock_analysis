@@ -2,6 +2,14 @@
 
 本文档记录通知能力 P0-P7 终态：渠道、配置 key、GitHub Actions 映射、Web 设置元数据、CLI 诊断口径、Web 一键测试、自定义 Webhook Body 模板语义、通知路由策略、降噪机制、聚合报告失败隔离、ntfy / Gotify 一等渠道、WebPush / Apprise 评估，以及本地 / Docker / GitHub Actions / Desktop 场景化配置说明。P0 只做基线与只读诊断；P1 增加 Web 单渠道真实测试；P2 产品化现有 Body 模板；P3 增加 report / alert / system_error 路由；P4 增加进程内降噪；P5 强化测试诊断和聚合报告逐渠道失败隔离；P6-A 新增 ntfy；P6-C 新增 Gotify；P6-D 只评估 WebPush / Apprise；P7 收口文档与 Actions env 对照表自动化，不新增运行时依赖、配置入口、per-URL 模板、跨进程持久化、真实每日摘要或重试循环。
 
+## 桌面与 Web 设置页
+
+「通知渠道」使用下拉列表选择企业微信、飞书、钉钉、Telegram、邮件、Pushover、ntfy、Gotify、PushPlus、Server酱3、自定义 Webhook / Bark、Discord、Slack 或 AstrBot。选择后只显示该渠道的基础配置；线程、加签、消息格式等收在渠道「高级配置」。报告、路由、降噪和共享 Webhook 策略收在「通用高级设置」。
+
+切换下拉项只切换显示范围，不会启停通知、删除密钥或丢弃其他渠道的未保存草稿。保存仍沿用原有配置字段。「发送测试」默认折叠，并跟随当前选定渠道，无需再次选择；只有点击发送按钮才会发送真实测试消息。
+
+The notification settings page uses a channel selector with per-channel credentials and collapsed advanced settings. Shared report, routing, deduplication, and webhook policies remain in common advanced settings. Switching views preserves saved credentials and unsaved drafts without enabling or disabling channels. The collapsed test panel follows the selected channel and sends only after an explicit button click. Existing configuration fields and the save protocol are unchanged.
+
 ## 渠道基线
 
 | 渠道 | 类型 | Minimal key | Advanced key | 说明 |

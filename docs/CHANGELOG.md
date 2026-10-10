@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- [改进] 通知设置采用渠道下拉列表，按渠道显示基础凭据、折叠高级参数与发送测试，保留多渠道配置和草稿。
+
 - [优化] 将本机 CLI 与 API 服务商合并到统一的「AI 模型配置」页面，保留分区、下拉选择与高级配置。
 
 - [优化] 模型设置分为本机 CLI 与 API 服务商，API 和数据源采用下拉选择及折叠高级配置，保留已有密钥与跨服务商草稿。

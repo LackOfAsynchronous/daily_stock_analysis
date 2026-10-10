@@ -2518,13 +2518,15 @@ describe('SettingsPage', () => {
     expect(screen.queryByTestId('settings-field-LLM_MY_PROXY_MODELS')).not.toBeInTheDocument();
   });
 
-  it('renders notification test panel before notification fields', () => {
+  it('requires a channel before showing notification fields and scoped testing', () => {
     useSystemConfigMock.mockReturnValue(buildSystemConfigState({ activeCategory: 'notification' }));
 
     renderSettingsPage();
 
+    expect(screen.queryByText('通知测试面板:WECHAT_WEBHOOK_URL')).not.toBeInTheDocument();
+    fireEvent.change(screen.getByRole('combobox', { name: '选择通知渠道' }), { target: { value: 'wechat' } });
     expect(screen.getByText('通知测试面板:WECHAT_WEBHOOK_URL')).toBeInTheDocument();
-    expect(screen.getByText('WECHAT_WEBHOOK_URL')).toBeInTheDocument();
+    expect(document.querySelector('#setting-WECHAT_WEBHOOK_URL')).toBeInTheDocument();
     expect(settingsPanelErrorBoundary).toHaveBeenCalledWith('通知测试');
     expect(settingsPanelErrorBoundary).toHaveBeenCalledWith('通知设置');
   });
@@ -2533,6 +2535,7 @@ describe('SettingsPage', () => {
     useSystemConfigMock.mockReturnValue(buildSystemConfigState({ activeCategory: 'notification' }));
 
     renderSettingsPage();
+    fireEvent.change(screen.getByRole('combobox', { name: '选择通知渠道' }), { target: { value: 'wechat' } });
 
     expect(screen.getAllByText(/浏览器开发者工具控制台与后端日志/)).toHaveLength(2);
     expect(screen.queryByText('desktop.log')).not.toBeInTheDocument();
@@ -2543,6 +2546,7 @@ describe('SettingsPage', () => {
     (window as { dsaDesktop?: unknown }).dsaDesktop = createDesktopRuntime();
 
     renderSettingsPage();
+    fireEvent.change(screen.getByRole('combobox', { name: '选择通知渠道' }), { target: { value: 'wechat' } });
 
     expect(screen.getAllByText('desktop.log')).toHaveLength(2);
     expect(screen.queryByText(/浏览器开发者工具控制台与后端日志/)).not.toBeInTheDocument();

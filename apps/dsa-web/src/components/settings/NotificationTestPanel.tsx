@@ -32,6 +32,7 @@ function getChannelOptions(language: 'zh' | 'en'): Array<{ value: NotificationTe
 }
 
 interface NotificationTestPanelProps {
+  selectedChannel?: NotificationTestChannel;
   items: SystemConfigUpdateItem[];
   maskToken: string;
   disabled?: boolean;
@@ -46,10 +47,12 @@ function clampTimeout(value: string): number {
 export const NotificationTestPanel: React.FC<NotificationTestPanelProps> = ({
   items,
   maskToken,
+  selectedChannel,
   disabled = false,
 }) => {
   const { language, t } = useUiLanguage();
   const [channel, setChannel] = useState<NotificationTestChannel>('wechat');
+  const activeChannel = selectedChannel ?? channel;
   const [title, setTitle] = useState(t('settings.notificationTestTitleValue'));
   const [content, setContent] = useState(t('settings.notificationTestContent'));
   const [timeoutSeconds, setTimeoutSeconds] = useState('20');
@@ -79,7 +82,7 @@ export const NotificationTestPanel: React.FC<NotificationTestPanelProps> = ({
     setIsTesting(true);
     try {
       const payload = await systemConfigApi.testNotificationChannel({
-        channel,
+        channel: activeChannel,
         items: normalizedItems,
         maskToken,
         title: title.trim() || t('settings.notificationTestTitleValue'),
@@ -114,13 +117,15 @@ export const NotificationTestPanel: React.FC<NotificationTestPanelProps> = ({
       )}
     >
       <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_1fr_120px]">
-        <Select
+        {selectedChannel ? <div className="self-center text-sm text-secondary-text">
+          {t('settings.notificationTestChannel')}：{getChannelOptions(language).find((option) => option.value === selectedChannel)?.label}
+        </div> : <Select
           label={t('settings.notificationTestChannel')}
           value={channel}
           options={getChannelOptions(language)}
           disabled={disabled || isTesting}
           onChange={(value) => setChannel(value as NotificationTestChannel)}
-        />
+        />}
         <Input
           label={t('settings.notificationTestTitle')}
           value={title}

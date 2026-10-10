@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 > For user-friendly release highlights, see the [GitHub Releases](https://github.com/ZhuLinsen/daily_stock_analysis/releases) page.
 
 ## [Unreleased]
+- [新功能] 新增全局本机 Codex 开关，覆盖报告、选股、问股、多 Agent、Deep Research、压缩及图片识别，保留原模型配置并禁用 API 回退。
 
 - [新功能] 接入 Massive 美股已完成日线，新增敏感 API Key 与请求限额设置；提供明确标注的成交成本分布估算，支持免费套餐与失败降级。
 

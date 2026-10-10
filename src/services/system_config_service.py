@@ -3576,6 +3576,13 @@ class SystemConfigService:
         return "", "尚未检测到主模型配置"
 
     def _build_setup_primary_llm_check(self, effective_map: Dict[str, str]) -> Dict[str, Any]:
+        if parse_env_bool(effective_map.get("LOCAL_CODEX_MODE"), default=False):
+            found = bool(shutil.which("codex"))
+            return self._setup_check(
+                "llm_primary", "LLM 主渠道", "ai_model", True,
+                "configured" if found else "needs_action",
+                "全局本机 Codex 已启用。" if found else "找不到 Codex，请检查后端 PATH。",
+            )
         generation_backend = normalize_backend_id(
             effective_map.get("GENERATION_BACKEND"),
             default=LITELLM_BACKEND_ID,
@@ -3642,6 +3649,12 @@ class SystemConfigService:
         effective_map: Dict[str, str],
         primary_check: Dict[str, Any],
     ) -> Dict[str, Any]:
+        if parse_env_bool(effective_map.get("LOCAL_CODEX_MODE"), default=False):
+            return self._setup_check(
+                "llm_agent", "Agent 渠道", "agent", True,
+                "inherited" if primary_check.get("status") == "configured" else "needs_action",
+                "问股、多 Agent 和深度调研使用全局本机 Codex。",
+            )
         generation_backend = normalize_backend_id(
             effective_map.get("GENERATION_BACKEND"),
             default=LITELLM_BACKEND_ID,

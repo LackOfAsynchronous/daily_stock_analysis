@@ -950,6 +950,7 @@ class Config:
     screening_enabled: bool = False
 
     # === AI 分析配置 ===
+    local_codex_mode: bool = False
     generation_backend: str = LITELLM_BACKEND_ID
     generation_fallback_backend: str = LITELLM_BACKEND_ID
     generation_backend_timeout_seconds: int = DEFAULT_LOCAL_CLI_TIMEOUT_SECONDS
@@ -1876,8 +1877,9 @@ class Config:
                 os.getenv('STOCK_INDEX_REMOTE_UPDATE_ENABLED'),
                 default=True,
             ),
-            generation_backend=generation_backend,
-            generation_fallback_backend=generation_fallback_backend,
+            local_codex_mode=parse_env_bool(os.getenv("LOCAL_CODEX_MODE"), default=False),
+            generation_backend=("codex_cli" if parse_env_bool(os.getenv("LOCAL_CODEX_MODE"), default=False) else generation_backend),
+            generation_fallback_backend=("" if parse_env_bool(os.getenv("LOCAL_CODEX_MODE"), default=False) else generation_fallback_backend),
             generation_backend_timeout_seconds=generation_backend_timeout_seconds,
             generation_backend_max_output_bytes=generation_backend_max_output_bytes,
             generation_backend_max_concurrency=generation_backend_max_concurrency,
@@ -3131,6 +3133,8 @@ class Config:
         kill-switch. Explicit local CLI Agent backends are unavailable because
         they are text generation backends, not Agent tool-calling runtimes.
         """
+        if self.local_codex_mode:
+            return not (self._agent_mode_explicit and not self.agent_mode)
         if (self.agent_generation_backend or AUTO_AGENT_BACKEND_ID).strip().lower() in GENERATION_ONLY_BACKEND_IDS:
             return False
         # Phase 3 no longer lets AGENT_MODE=true bypass tool-route safety.
@@ -3290,7 +3294,7 @@ class Config:
                 field="AGENT_BACKEND",
                 code="capability_unsupported",
             ))
-        if agent_backend == "codex_app_server" and self.agent_arch != "single":
+        if not self.local_codex_mode and agent_backend == "codex_app_server" and self.agent_arch != "single":
             issues.append(ConfigIssue(
                 severity="error",
                 message="Codex 本地 Agent 当前只支持单 Agent 问股，请将 AGENT_ARCH 设为 single。",

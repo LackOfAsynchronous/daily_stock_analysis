@@ -47,6 +47,7 @@ const LLM_CHANNEL_EDITOR_RUNTIME_KEYS = new Set([
   'LLM_TEMPERATURE',
 ]);
 const GENERATION_BACKEND_STATUS_KEYS = new Set([
+  'LOCAL_CODEX_MODE',
   'GENERATION_BACKEND',
   'GENERATION_FALLBACK_BACKEND',
   'GENERATION_BACKEND_TIMEOUT_SECONDS',
@@ -85,6 +86,7 @@ const GENERATION_BACKEND_STATUS_KEYS = new Set([
 ]);
 const LLM_CHANNEL_STATUS_KEY_PATTERN = /^LLM_[A-Z0-9_]+_(PROTOCOL|API_SURFACE|BASE_URL|API_KEY|API_KEYS|MODELS|EXTRA_HEADERS|ENABLED)$/;
 const AGENT_BACKEND_STATUS_KEYS = new Set([
+  'LOCAL_CODEX_MODE',
   'AGENT_BACKEND',
   'AGENT_GENERATION_BACKEND',
   'AGENT_LITELLM_MODEL',
@@ -1202,7 +1204,9 @@ const SettingsPage: React.FC = () => {
     : t('settings.diagnosticHintWeb');
   const activeCategoryTitle = getCategoryTitle(activeCategory as SystemConfigCategory, t('settings.activePanelTitle'), uiLanguage);
   const activeCategoryDescription = getCategoryDescription(activeCategory as SystemConfigCategory, '', uiLanguage);
-  const selectedAgentBackend = (rawActiveItemMap.get('AGENT_BACKEND') || 'auto').trim().toLowerCase();
+  const selectedAgentBackend = String(getConfigItem(itemsByCategory.ai_model || [], 'LOCAL_CODEX_MODE')?.value ?? '').trim().toLowerCase() === 'true'
+    ? 'codex_global'
+    : (rawActiveItemMap.get('AGENT_BACKEND') || 'auto').trim().toLowerCase();
   const selectedAgentArch = (rawActiveItemMap.get('AGENT_ARCH') || 'single').trim().toLowerCase();
   const hasCodexArchitectureConflict = selectedAgentBackend === 'codex_app_server' && selectedAgentArch !== 'single';
   const codexArchitectureIssue: ConfigValidationIssue = {
@@ -1606,6 +1610,16 @@ const SettingsPage: React.FC = () => {
                 title={t('settings.llmAccess')}
                 description={t('settings.llmAccessDescription')}
               >
+                {activeItems.filter((item) => item.key === 'LOCAL_CODEX_MODE').map((item) => (
+                  <SettingsField
+                    key={item.key}
+                    item={item}
+                    value={item.value}
+                    disabled={isSaving || isImportingEnv}
+                    onChange={setDraftValue}
+                    issues={issueByKey[item.key] || []}
+                  />
+                ))}
                 <GenerationBackendStatusPanel
                   items={generationBackendDraftItems}
                   maskToken={maskToken}

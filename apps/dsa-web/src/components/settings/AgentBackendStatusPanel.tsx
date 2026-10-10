@@ -21,6 +21,7 @@ interface AgentBackendStatusPanelProps {
 }
 
 function backendLabel(backendId: string, t: ReturnType<typeof useUiLanguage>['t']): string {
+  if (backendId === 'codex_global') return 'Codex · Global';
   return backendId === 'codex_app_server'
     ? t('settings.agentBackendCodexLabel')
     : t('settings.agentBackendDefaultLabel');

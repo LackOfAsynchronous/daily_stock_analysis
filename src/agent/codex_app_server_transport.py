@@ -441,6 +441,7 @@ class CodexAppServerTransport:
         with self._state_lock:
             self._thread_tools[thread_id] = set(tool_names)
             self._thread_metadata[thread_id] = {
+                "model": result.get("model"),
                 "active_permission_profile": active_profile,
                 "approval_policy": result.get("approvalPolicy"),
                 "cwd_matches": result.get("cwd") == str(self.safe_cwd),
@@ -481,12 +482,15 @@ class CodexAppServerTransport:
         text: str,
         timeout: Optional[float] = None,
         cancel_event: Optional[threading.Event] = None,
+        image_urls: Optional[Sequence[str]] = None,
     ) -> TurnResult:
         result = self.request(
             "turn/start",
             {
                 "threadId": thread_id,
-                "input": [{"type": "text", "text": text}],
+                "input": [{"type": "text", "text": text}] + [
+                    {"type": "image", "url": url} for url in (image_urls or [])
+                ],
                 "approvalPolicy": "never",
                 "environments": [],
                 "permissions": PERMISSION_PROFILE,
@@ -556,7 +560,7 @@ class CodexAppServerTransport:
             self._completed_turns.pop((thread_id, turn_id), None)
             self._completed_answer_items.pop((thread_id, turn_id), None)
             self._turn_usage.pop((thread_id, turn_id), None)
-        model = completed_turn.get("model") or notification.get("params", {}).get("model") or ""
+        model = completed_turn.get("model") or notification.get("params", {}).get("model") or self.thread_metadata(thread_id).get("model") or ""
         return TurnResult(
             turn_id=turn_id,
             final_text=final_text,

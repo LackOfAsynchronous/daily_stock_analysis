@@ -9,6 +9,7 @@ from types import SimpleNamespace
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
 
 from src.analyzer import GeminiAnalyzer
+from src.config import parse_env_bool
 from src.config import (
     ANSPIRE_LLM_BASE_URL_DEFAULT,
     ANSPIRE_LLM_MODEL_DEFAULT,
@@ -189,6 +190,9 @@ class GenerationBackendStatusService:
         analyzer_factory: Optional[Callable[[Config], GeminiAnalyzer]] = None,
     ) -> None:
         self._effective_map = {str(k).upper(): "" if v is None else str(v) for k, v in effective_map.items()}
+        if parse_env_bool(self._effective_map.get("LOCAL_CODEX_MODE"), default=False):
+            self._effective_map["GENERATION_BACKEND"] = "codex_cli"
+            self._effective_map["GENERATION_FALLBACK_BACKEND"] = ""
         self._validation_issues = list(validation_issues or [])
         self._analyzer_factory = analyzer_factory or (lambda config: GeminiAnalyzer(config=config))
 
@@ -457,19 +461,20 @@ class GenerationBackendStatusService:
             current_health = "failed"
         capabilities = self._capabilities_for_backend(backend_id)
         backend_type = "local_cli" if backend_id in LOCAL_CLI_GENERATION_BACKEND_IDS else "litellm"
+        global_codex = parse_env_bool(self._effective_map.get("LOCAL_CODEX_MODE"), default=False)
         return {
             "backend_id": backend_id,
             "backend_type": backend_type,
-            "provider_id": backend_id,
+            "provider_id": "codex_global" if global_codex else backend_id,
             "available": available,
             "health_status": current_health,
             "supports_json": capabilities.supports_json,
-            "supports_tools": capabilities.supports_tools,
+            "supports_tools": global_codex or capabilities.supports_tools,
             "supports_stream": capabilities.supports_stream,
-            "supports_vision": capabilities.supports_vision,
+            "supports_vision": global_codex or capabilities.supports_vision,
             "is_primary": is_primary,
             "fallback_target": fallback_target,
-            "max_concurrency": self._max_concurrency_for_backend(backend_id, config),
+            "max_concurrency": 2 if global_codex else self._max_concurrency_for_backend(backend_id, config),
             "usage_available": backend_id == LITELLM_BACKEND_ID,
             "last_error_code": _as_error_code(status_error.error_code) if status_error else None,
             "last_error_message": status_error.message if status_error else None,
@@ -730,6 +735,7 @@ class GenerationBackendStatusService:
         primary = backend_id or config.generation_backend
         openai_keys = self._openai_keys_from_map(self._effective_map)
         return Config(
+            local_codex_mode=parse_env_bool(self._effective_map.get("LOCAL_CODEX_MODE"), default=False),
             generation_backend=primary,
             generation_fallback_backend="",
             generation_backend_timeout_seconds=timeout_seconds or config.generation_backend_timeout_seconds,

@@ -1751,3 +1751,9 @@ Technical indicator rules use daily-close edge triggers only. Partial-bar handli
 ---
 
 For more questions, please [submit an Issue](https://github.com/ZhuLinsen/daily_stock_analysis/issues)
+
+## Global local Codex (experimental)
+
+Enable `LOCAL_CODEX_MODE=true` under Settings → AI models to route reports, scheduled analysis, market reviews, screening ranking and enrichment, chat, multi-agent, Deep Research, context compression and stock image extraction through signed-in local Codex. Existing model settings are retained and restored when disabled. No API fallback is used. Explicit API connection tests still test their selected channel.
+
+Codex must be on the backend PATH. Inference uses isolated ephemeral App Server sessions, at most two concurrently. Tool selections are JSON Schema validated and executed by the existing DSA runner with stock-scope checks. Market data continues to use its configured providers. Network and Codex quota are required; prompts, tool results and images may be processed by the service configured in Codex. Unsupported vision, quota and network errors fail explicitly. DSA does not read Codex credentials or assume unknown usage costs are zero.

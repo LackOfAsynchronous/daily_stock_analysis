@@ -1981,3 +1981,9 @@ Key 使用 Authorization 请求头，不写入 URL、日志或报告；设置接
 Official references: [Custom Bars](https://massive.com/docs/rest/stocks/aggregates/custom-bars), [Pricing](https://massive.com/pricing).
 
 English: Set `MASSIVE_API_KEY` in Data sources and keep `MASSIVE_REQUESTS_PER_MINUTE=5` for Basic. Completed US daily bars only; no realtime claim or full-market snapshot replacement. With chip analysis enabled, a disclosed 20–120-session uniform daily-range volume profile supplies estimated costs. It is not actual shareholder cost basis or profitable-holder data. Invalid/unauthorized/rate-limited responses fall back, and incomplete estimates stay missing. Credentials use headers and existing local sensitive-config handling.
+
+## 全局本机 Codex（实验）
+
+在设置 → AI 模型开启“全局使用本机 Codex”，或配置 `LOCAL_CODEX_MODE=true`。覆盖普通/定时报告、大盘复盘、选股智能重排、选股深度补充、问股、多 Agent、Deep Research、上下文压缩和股票图片识别。原有模型设置保留，关闭开关即恢复。开启时不回退到 DeepSeek 或其他 API 模型；手动的 API 连接测试仍测试所选 API 渠道。
+
+需安装并登录 Codex，且后端 PATH 能找到 `codex`。通过隔离的 App Server 推理，工具选择使用经过 JSON Schema 验证的结构化结果，工具仍由 DSA 原有执行器执行并检查股票作用域。不是 Codex 自行操作电脑。每次推理使用临时会话，最多同时运行 2 个；额度、网络或模型图片能力不足会明确失败。价格数据仍由行情源提供。使用 Codex 配置的模型和服务，问题、数据和图片可能发送到该服务，DSA 不读取其凭据。未知 token 成本不记为免费。

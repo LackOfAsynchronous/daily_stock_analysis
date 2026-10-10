@@ -45,6 +45,8 @@ class AgentBackendConfigError(ValueError):
 
 def resolve_agent_backend_id(config: Any) -> str:
     """Resolve Chat backend; ``auto`` deliberately remains LiteLLM."""
+    if getattr(config, "local_codex_mode", False):
+        return "litellm"  # DSA owns the loop; LLMToolAdapter supplies Codex inference.
     requested = str(getattr(config, "agent_backend", "auto") or "auto").strip().lower()
     if requested not in AGENT_BACKEND_IDS:
         raise AgentBackendConfigError(

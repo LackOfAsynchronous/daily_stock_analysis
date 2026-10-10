@@ -119,6 +119,15 @@ _FIELD_DEFINITIONS: Dict[str, Dict[str, Any]] = {
     # ------------------------------------------------------------------
     # AI Model – LiteLLM unified config
     # ------------------------------------------------------------------
+    "LOCAL_CODEX_MODE": {
+        "title": "Use local Codex for all AI features",
+        "description": "Route reports, screening, chat, multi-agent, deep research, compression and image extraction through signed-in local Codex. Data sources remain unchanged. No API fallback; requires network and Codex quota. Disable to restore existing model settings.",
+        "category": "ai_model", "data_type": "boolean", "ui_control": "switch",
+        "is_sensitive": False, "is_required": False, "is_editable": True,
+        "default_value": "false", "display_order": 0, "options": [],
+        "validation": {}, "help_key": "settings.ai_model.LOCAL_CODEX_MODE",
+        "examples": ["LOCAL_CODEX_MODE=true"], "docs": [{"label": "Global local Codex", "href": "https://github.com/LackOfAsynchronous/daily_stock_analysis/blob/feat/us-stock-screening/docs/full-guide.md#全局本机-codex实验"}], "warning_codes": [],
+    },
     "GENERATION_BACKEND": {
         "title": "Analysis Generation Method",
         "description": "Generation method used by stock analysis, market reviews, and regular text generation.",

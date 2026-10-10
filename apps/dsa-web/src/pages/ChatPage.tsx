@@ -1183,7 +1183,7 @@ const ChatPage: React.FC = () => {
                   variant={agentStatus.backend === 'codex_app_server' ? 'warning' : 'history'}
                   size="sm"
                 >
-                  {t(agentStatus.backend === 'codex_app_server' ? 'chat.codexBackendBadge' : 'chat.defaultBackendBadge')}
+                  {agentStatus.backend === 'codex_global' ? 'Codex · Global' : t(agentStatus.backend === 'codex_app_server' ? 'chat.codexBackendBadge' : 'chat.defaultBackendBadge')}
                 </Badge>
               ) : null}
             </h1>

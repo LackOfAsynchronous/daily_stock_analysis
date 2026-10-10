@@ -226,6 +226,10 @@ class AgentBackendStatusService:
                 error_code=evaluation["error_code"],
                 message=evaluation["message"],
             )
+        if getattr(config, "local_codex_mode", False):
+            status = self._codex_cheap_status()
+            status["backend"] = "codex_global"
+            return status
         if evaluation["backend"] == "litellm":
             return self._response(backend="litellm", available=True)
         return self._codex_cheap_status()
@@ -325,6 +329,7 @@ class AgentBackendStatusService:
             return self._config
         generation_service = GenerationBackendStatusService(effective_map=self._effective_map)
         config = generation_service.build_effective_config()
+        config.local_codex_mode = parse_env_bool(self._effective_map.get("LOCAL_CODEX_MODE"), default=False)
         config.agent_backend = (self._effective_map.get("AGENT_BACKEND") or "auto").strip().lower()
         config.agent_generation_backend = (
             self._effective_map.get("AGENT_GENERATION_BACKEND") or "auto"

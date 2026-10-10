@@ -375,6 +375,11 @@ def extract_stock_codes_from_image(
     _verify_image_magic_bytes(image_bytes, mime_type)
 
     image_b64 = base64.b64encode(image_bytes).decode("ascii")
+    cfg = get_config()
+    if getattr(cfg, "local_codex_mode", False):
+        from src.llm.codex_runtime import complete
+        raw = complete(cfg, EXTRACT_PROMPT, images=[f"data:{mime_type};base64,{image_b64}"])
+        return _parse_items_from_text(raw), raw
     model = _resolve_vision_model()
     keys = _get_api_keys_for_model(model, get_config())
 

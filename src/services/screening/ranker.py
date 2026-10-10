@@ -158,7 +158,9 @@ def rank_candidates_with_metadata(
         degradation=degradation,
     )
 
-    model_chain = _dedupe([llm_model, *(fallback_models or [])])
+    from src.config import get_config
+    codex_mode = getattr(get_config(), "local_codex_mode", False)
+    model_chain = ["codex/configured-model"] if codex_mode else _dedupe([llm_model, *(fallback_models or [])])
     attempted_models: list[str] = []
     all_errors: list[str] = []
     last_coverage = 0.0
@@ -577,6 +579,12 @@ def _call_llm(
     max_tokens: int | None = 2048,
 ) -> str:
     """Call LLM via litellm with fallback models and channel configs."""
+    from src.config import get_config
+    cfg = get_config()
+    if getattr(cfg, "local_codex_mode", False):
+        from src.llm.codex_runtime import complete
+        return complete(cfg, prompt, system_prompt=_RANKING_SYSTEM_INSTRUCTIONS,
+                        timeout=min(timeout_sec, cfg.generation_backend_timeout_seconds))
     import litellm
 
     if silent:

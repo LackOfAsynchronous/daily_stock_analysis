@@ -32,6 +32,13 @@ const settingsHelpZhCN: SettingsHelpMap = {
       '修改后保存配置即可供后续任务读取。',
     ],
   },
+  'settings.ai_model.LOCAL_CODEX_MODE': {
+    title: '全局使用本机 Codex（实验）',
+    summary: '把所有生产 AI 推理统一交给本机已登录的 Codex。',
+    usage: '安装并登录 Codex，确认后端 PATH 可找到 codex，再开启并保存。',
+    impact: ['覆盖分析、选股重排、问股、多 Agent、深度调研、压缩和图片识别；行情源不变。'],
+    notes: ['需要联网并消耗 Codex 额度。失败不回退到 API。关闭开关恢复原模型设置。', '图片能力取决于 Codex 配置的模型。手动 API 渠道测试仍使用所选 API。'],
+  },
   'settings.ai_model.GENERATION_BACKEND': {
     title: '分析生成方式',
     showFieldKey: false,
@@ -1312,6 +1319,13 @@ const settingsHelpEnUS: SettingsHelpMap = {
     ],
     impact: ['Affects analysis scope, notification content, and saved history reports.'],
     notes: ['Saved STOCK_LIST values are written with English commas.', 'Save the setting before later tasks can read it.'],
+  },
+  'settings.ai_model.LOCAL_CODEX_MODE': {
+    title: 'Use local Codex for all AI features (experimental)',
+    summary: 'Use signed-in local Codex for every production AI inference.',
+    usage: 'Install and sign in to Codex, make codex visible on the backend PATH, then enable and save.',
+    impact: ['Covers reports, ranking, chat, multi-agent, research, compression and image extraction. Market data providers remain unchanged.'],
+    notes: ['Requires network and Codex quota. No API fallback. Disable to restore model settings.', 'Vision depends on the configured model. Explicit API channel tests still use their selected API.'],
   },
   'settings.ai_model.GENERATION_BACKEND': {
     title: 'Analysis Generation Method',

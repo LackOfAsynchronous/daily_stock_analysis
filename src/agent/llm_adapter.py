@@ -350,6 +350,9 @@ class LLMToolAdapter:
         self._backend_error: Optional[GenerationError] = None
         self._generation_backend_id = ""
         self._route_resolution: AgentLiteLLMRouteResolution = AgentLiteLLMRouteResolution(False)
+        if getattr(config, "local_codex_mode", False):
+            self._litellm_available = True
+            return
         self._register_custom_model_pricing()
         self._init_litellm()
 
@@ -535,6 +538,8 @@ class LLMToolAdapter:
     @property
     def primary_provider(self) -> str:
         """Provider name extracted from litellm_model prefix."""
+        if getattr(self._config, "local_codex_mode", False):
+            return "codex"
         model = get_effective_agent_primary_model(self._config)
         if "/" in model:
             return model.split("/")[0]
@@ -595,6 +600,26 @@ class LLMToolAdapter:
     ) -> LLMResponse:
         """Shared completion path for both tool and text-only calls."""
         config = self._config
+        if getattr(config, "local_codex_mode", False):
+            from src.llm.codex_runtime import complete, tool_completion
+            try:
+                if tools:
+                    result = tool_completion(config, messages, tools, timeout=timeout)
+                    return LLMResponse(
+                        content=result["content"],
+                        tool_calls=[ToolCall(**item) for item in result["tool_calls"]],
+                        provider="codex", model=result["model"],
+                        usage=result["usage"],
+                    )
+                turn = complete(config, json.dumps(messages, ensure_ascii=False),
+                                system_prompt="Continue the supplied conversation. Return only the final answer.",
+                                timeout=timeout, return_result=True)
+                return LLMResponse(content=turn.final_text, provider="codex", model=turn.model or "codex/configured-model",
+                                   usage=turn.usage or {"usage_available": False})
+            except Exception as exc:
+                logger.warning("Codex inference failed: %s", type(exc).__name__)
+                return LLMResponse(content="Codex inference failed: " + str(getattr(exc, "code", type(exc).__name__)),
+                                   provider="error", model="codex/configured-model")
         if self._backend_error is not None:
             error_msg = (
                 "Agent generation backend configuration error: "

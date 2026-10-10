@@ -20,6 +20,9 @@ def create_generation_backend(
     """Create the configured generation backend."""
 
     normalized = (backend_id or "").strip().lower()
+    if getattr(config, "local_codex_mode", False):
+        from src.llm.codex_runtime import CodexGenerationBackend
+        return CodexGenerationBackend(config)
     if normalized == LITELLM_BACKEND_ID:
         if litellm_completion_callable is None:
             raise GenerationError(

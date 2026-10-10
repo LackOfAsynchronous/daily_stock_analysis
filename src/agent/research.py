@@ -232,6 +232,14 @@ class ResearchAgent:
             return None
         return max(1, math.ceil(min(float(default_timeout), float(timeout_seconds))))
 
+    def _stage_timeout(self, default_timeout: int, remaining: Optional[float]) -> Optional[int]:
+        # Codex starts an isolated process per completion; keep the overall
+        # research deadline while allowing its cold start and longer synthesis.
+        cfg = getattr(self.llm_adapter, "_config", None)
+        if getattr(cfg, "local_codex_mode", False) is True:
+            default_timeout = max(default_timeout, min(120, cfg.generation_backend_timeout_seconds))
+        return self._resolve_step_timeout(default_timeout, remaining)
+
     @staticmethod
     def _looks_like_timeout_error(error: Any) -> bool:
         """Best-effort detection for timeout-like failures from lower layers."""
@@ -313,7 +321,7 @@ Return a JSON object:
         ]
 
         try:
-            step_timeout = self._resolve_step_timeout(15, timeout_seconds)
+            step_timeout = self._stage_timeout(15, timeout_seconds)
             if step_timeout is None:
                 return {"questions": [query], "tokens": 0, "timed_out": True}
             completion = self._call_text_completion(
@@ -444,7 +452,7 @@ Use Markdown formatting.  Be concise but thorough.
         ]
 
         try:
-            step_timeout = self._resolve_step_timeout(30, timeout_seconds)
+            step_timeout = self._stage_timeout(30, timeout_seconds)
             if step_timeout is None:
                 return {"content": "", "tokens": 0, "timed_out": True}
             completion = self._call_text_completion(

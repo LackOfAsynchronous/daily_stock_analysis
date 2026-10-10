@@ -2797,6 +2797,8 @@ Output strictly in the following JSON format. This is a complete Decision Dashbo
     def _init_litellm(self) -> None:
         """Initialize litellm Router from channels / YAML / legacy keys."""
         config = self._get_runtime_config()
+        if getattr(config, "local_codex_mode", False):
+            return
         if self._get_hermes_config_error(config) is not None:
             logger.error("Analyzer LLM: Hermes channel configuration blocks legacy fallback")
             return
@@ -2932,6 +2934,8 @@ Output strictly in the following JSON format. This is a complete Decision Dashbo
     def _resolve_generation_backend_config(self) -> Tuple[str, Optional[str]]:
         """Resolve and validate generation backend ids."""
         config = self._get_runtime_config()
+        if getattr(config, "local_codex_mode", False):
+            return "codex_cli", None
         backend_id = resolve_generation_backend_id(config)
         fallback_backend_id = resolve_generation_fallback_backend_id(config)
         return backend_id, fallback_backend_id
@@ -2941,6 +2945,8 @@ Output strictly in the following JSON format. This is a complete Decision Dashbo
         try:
             backend_id, _fallback_backend_id = self._resolve_generation_backend_config()
             config = self._get_runtime_config()
+            if getattr(config, "local_codex_mode", False):
+                return self._get_generation_backend(backend_id).get_config_error()
             hermes_error = self._get_hermes_config_error(config)
             if hermes_error is not None:
                 return hermes_error

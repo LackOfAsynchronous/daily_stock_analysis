@@ -111,6 +111,35 @@ function createDeferred<T>() {
 }
 
 describe('StockScreeningPage', () => {
+  it('switches to US strategies, submits a US task and restores the CN default', async () => {
+    getScreeningStatus.mockResolvedValue({ enabled: true, available: true });
+    getStrategies.mockResolvedValue({
+      ...mockStrategiesResponse,
+      strategies: [...mockStrategiesResponse.strategies, {
+        id: 'us_dual_low', name: '美股双低价值', description: '美元估值策略', marketScope: ['us'],
+      }, {
+        id: 'us_momentum_quality', name: '美股趋势质量', description: '趋势确认', marketScope: ['us'],
+      }],
+    });
+    screenStocks.mockResolvedValue({ enabled: true, candidates: [], candidateCount: 0 });
+    render(<StockScreeningPage />);
+    await screen.findByText('选股已开启');
+    await waitFor(() => expect(screen.getByLabelText('策略')).toHaveValue('dual_low'));
+    fireEvent.change(screen.getByLabelText('市场'), { target: { value: 'us' } });
+    expect(screen.getByLabelText('策略')).toHaveValue('us_dual_low');
+    expect(Array.from((screen.getByLabelText('策略') as HTMLSelectElement).options).map((o) => o.value))
+      .toEqual(['us_dual_low', 'us_momentum_quality', '__custom_strategy__']);
+    expect(screen.getByText('美股数据范围')).toBeInTheDocument();
+    expect(screen.queryByText('热点题材')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /运行选股/ }));
+    await waitFor(() => expect(screenStocks).toHaveBeenCalledWith({ market: 'us', strategy: 'us_dual_low', maxResults: 3 }));
+    await screen.findByText('选股完成');
+    fireEvent.change(screen.getByLabelText('市场'), { target: { value: 'cn' } });
+    expect(screen.getByLabelText('策略')).toHaveValue('dual_low');
+    expect(screen.getByText('热点题材')).toBeInTheDocument();
+    expect(screen.queryByText('选股完成')).not.toBeInTheDocument();
+  });
+
   beforeEach(() => {
     enableScreening.mockReset();
     getHistory.mockReset();
@@ -1046,7 +1075,7 @@ describe('StockScreeningPage', () => {
     expect(await screen.findByText('选股已开启')).toBeInTheDocument();
 
     const marketSelect = screen.getByLabelText('市场') as HTMLSelectElement;
-    expect(Array.from(marketSelect.options).map((option) => option.value)).toEqual(['cn']);
+    expect(Array.from(marketSelect.options).map((option) => option.value)).toEqual(['cn', 'us']);
 
     const strategySelect = screen.getByLabelText('策略') as HTMLSelectElement;
     expect(Array.from(strategySelect.options).map((option) => option.textContent)).toEqual([

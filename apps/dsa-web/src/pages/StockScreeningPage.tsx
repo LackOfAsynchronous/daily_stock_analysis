@@ -42,7 +42,9 @@ import {
 import { formatParsedApiError, getParsedApiError, toApiErrorMessage, type ParsedApiError } from '../api/error';
 import { AppPage, Button, InlineAlert, Select } from '../components/common';
 
-const MARKETS = [{ id: 'cn', label: 'A 股' }];
+const MARKETS = [{ id: 'cn', label: 'A 股' }, { id: 'us', label: '美股' }];
+const supportsMarket = (item: ScreeningStrategy, marketId: string) =>
+  (item.marketScope?.length ? item.marketScope : [item.market || 'cn']).includes(marketId);
 const SCREEN_TASK_STORAGE_KEY = 'dsa.screening.activeScreenTask.v1';
 const SCREEN_TASK_POLL_INTERVAL_MS = 2000;
 const CUSTOM_STRATEGY_OPTION_VALUE = '__custom_strategy__';
@@ -884,6 +886,7 @@ const StockScreeningPage: React.FC = () => {
   const [taskProgress, setTaskProgress] = useState(restoredTask?.taskId ? 10 : 0);
   const [taskMessage, setTaskMessage] = useState(restoredTask?.taskId ? '正在恢复选股任务状态...' : '');
 
+  const marketStrategies = useMemo(() => strategies.filter((item) => supportsMarket(item, market)), [strategies, market]);
   const selectedStrategy = useMemo(() => strategies.find((item) => item.id === strategy), [strategies, strategy]);
   const selectedStrategyTitle = selectedStrategy?.name || selectedStrategy?.title || '自定义策略';
   const selectedStrategyTag = formatStrategyCategory(
@@ -1418,6 +1421,12 @@ const StockScreeningPage: React.FC = () => {
       clearScreeningResults();
     }
     setMarket(nextMarket);
+    historyContextStrategyRef.current = false;
+    if (!strategies.some((item) => item.id === strategy && supportsMarket(item, nextMarket))) {
+      const preferredId = nextMarket === 'us' ? 'us_dual_low' : 'dual_low';
+      const supported = strategies.filter((item) => supportsMarket(item, nextMarket));
+      setStrategy(supported.find((item) => item.id === preferredId)?.id || supported[0]?.id || '');
+    }
   };
 
   const handleMaxResultsChange = (nextMaxResults: number) => {
@@ -1516,7 +1525,7 @@ const StockScreeningPage: React.FC = () => {
 
       {error ? <InlineAlert variant="danger" title="调用失败" message={error} /> : null}
 
-      <section className="rounded-2xl border border-border/80 bg-card/95 p-4 shadow-soft-card">
+      {market === 'cn' ? <section className="rounded-2xl border border-border/80 bg-card/95 p-4 shadow-soft-card">
         <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
           <div className="flex items-start gap-3">
             <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-orange-500/10 text-orange-500 shadow-[0_10px_30px_rgba(249,115,22,0.16)]">
@@ -1762,7 +1771,12 @@ const StockScreeningPage: React.FC = () => {
             ) : null}
           </div>
         ) : null}
-      </section>
+      </section> : null}
+
+      {market === 'us' ? (
+        <InlineAlert variant="info" title="美股数据范围"
+          message="Yahoo Finance 日线筛选：优先标普 500，股票池获取失败时使用内置大盘股池，并非全美股扫描。价格、市值和估算成交额以美元计；量比为当日成交量 / 近 20 日均量，换手率按总股本估算。行情可能延迟，缺失估值字段的股票不会进入价值筛选。" />
+      ) : null}
 
       <section className="rounded-2xl border border-cyan/35 bg-card/95 p-4 shadow-soft-card">
         <div className="mb-4 flex items-start justify-between gap-3">
@@ -1800,7 +1814,7 @@ const StockScreeningPage: React.FC = () => {
               disabled={loading || loadingStrategies}
               placeholder=""
               options={[
-                ...strategies.map((item) => ({
+                ...marketStrategies.map((item) => ({
                   value: item.id,
                   label: item.name || item.title || item.id,
                 })),
@@ -1938,7 +1952,7 @@ const StockScreeningPage: React.FC = () => {
                   <th className="px-4 py-3 font-semibold">代码</th>
                   <th className="px-4 py-3 font-semibold">名称</th>
                   <th className="px-4 py-3 font-semibold">行业</th>
-                  <th className="px-4 py-3 font-semibold">价格</th>
+                  <th className="px-4 py-3 font-semibold">价格{market === 'us' ? '（USD）' : ''}</th>
                   <th className="px-4 py-3 font-semibold">涨跌幅</th>
                   <th className="px-4 py-3 font-semibold">评分</th>
                   <th className="px-4 py-3 font-semibold">排序依据</th>
@@ -2070,7 +2084,7 @@ const StockScreeningPage: React.FC = () => {
                                 </div>
                                 <div>
                                   <p className="text-xs font-semibold text-secondary-text">成交额</p>
-                                  <p className="mt-1 text-sm text-foreground">{formatAmount(item.amount)}</p>
+                                  <p className="mt-1 text-sm text-foreground">{formatAmount(item.amount)}{market === 'us' ? ' 美元（估算）' : ''}</p>
                                 </div>
                                 {item.llmWatchItems?.length ? (
                                   <div>

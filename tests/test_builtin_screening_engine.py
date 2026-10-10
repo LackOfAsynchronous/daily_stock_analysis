@@ -71,6 +71,9 @@ def test_bundled_strategies_are_loaded_from_the_internal_package() -> None:
     strategies = load_all_strategies(SCREENING_ROOT / "strategies")
 
     assert set(strategies) == {
+        "us_dual_low",
+        "us_momentum_quality",
+        "us_low_volatility_quality",
         "balanced_alpha",
         "blue_chip_income",
         "capital_heat",
@@ -816,3 +819,27 @@ def test_fresh_snapshot_cache_reuses_fallback_from_same_source_chain(tmp_path, m
     assert second.attrs["snapshot_source"] == "last_good_cache"
     assert second.attrs["last_good_snapshot_source"] == "sina"
     assert second.attrs["fallback_used"] is False
+
+
+def test_us_strategies_use_usd_filters_and_keep_us_names() -> None:
+    strategies = load_all_strategies(SCREENING_ROOT / "strategies")
+    sample = pd.DataFrame([
+        {"code": "STLD", "name": "Steel Dynamics", "price": 150.0,
+         "amount": 100_000_000, "total_mv": 30_000_000_000, "pe_ratio": 12,
+         "pb_ratio": 2.5, "change_pct": 1.0},
+        {"code": "MISS", "name": "Missing valuation", "price": 30.0,
+         "amount": 100_000_000, "total_mv": 30_000_000_000, "pe_ratio": None,
+         "pb_ratio": None, "change_pct": 1.0},
+    ])
+    value = strategies["us_dual_low"].screening
+    assert value.market_scope == ["us"]
+    assert not value.hard_filters.exclude_st
+    assert apply_hard_filters(sample, value.hard_filters)["code"].tolist() == ["STLD"]
+    for name in ("us_dual_low", "us_momentum_quality", "us_low_volatility_quality"):
+        us = strategies[name].screening
+        assert us.market_scope == ["us"]
+        assert us.hard_filters.price_max is None
+        assert "theme_heat" not in us.factor_weights
+    assert strategies["us_momentum_quality"].screening.hard_filters.require_ma_bullish
+    assert strategies["us_low_volatility_quality"].screening.hard_filters.atr_20_pct_max
+    assert strategies["dual_low"].screening.market_scope == ["cn"]

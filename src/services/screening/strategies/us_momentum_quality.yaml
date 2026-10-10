@@ -1,0 +1,109 @@
+# Derived from AlphaSift revision 9f522747caafd3c0b1ddb7e14d5cf44c8580b6cf.
+# Licensed under Apache-2.0 and modified for daily_stock_analysis.
+name: us_momentum_quality
+display_name: 美股趋势质量
+description: 按美元口径筛选流动性充足、站上 MA20 且趋势确认的美股
+version: '1.0'
+category: framework
+tags:
+- momentum
+- quality
+- trend
+- llm_friendly
+analysis_skills:
+- bull_trend
+- growth_quality
+style:
+  risk_profile: balanced
+  holding_period: swing
+  execution_style: trend_quality
+  market_regime:
+  - risk_on
+  - trend
+  - rotation
+  capital_profile: high_liquidity
+  ui_badge: 趋势
+screening:
+  enabled: true
+  market_scope:
+  - us
+  hard_filters:
+    exclude_st: false
+    amount_min: 20000000
+    market_cap_min: 2000000000
+    pe_ttm_min: 0
+    pe_ttm_max: 60
+    change_pct_min: -3.5
+    change_pct_max: 7.5
+    price_min: 5
+    require_price_above_ma20: true
+    require_ma_bullish: true
+    signal_score_min: 55
+  tech_weight: 0.45
+  factor_weights:
+    momentum: 0.28
+    value: 0.15
+    liquidity: 0.18
+    activity: 0.15
+    stability: 0.12
+    reversal: 0.04
+    size: 0.02
+  scoring_profile:
+    momentum_chase_start_pct: 5.0
+    momentum_chase_penalty_slope: 14.0
+    activity_ideal_volume_ratio: 2.2
+    activity_ideal_turnover_rate: 1.0
+    stability_hot_change_pct: 6.5
+  risk_profile:
+    chase_change_pct: 7.5
+    abnormal_volume_ratio: 5.5
+    high_turnover_rate: 14.0
+    low_llm_confidence: 0.5
+  portfolio_profile:
+    max_same_bucket: 1
+    concentration_penalty: 4.5
+    buckets:
+      科技:
+      - Technology
+      - Software
+      - Semiconductor
+      - Electronic
+      金融:
+      - Bank
+      - Insurance
+      - Financial
+      - Capital Markets
+      消费:
+      - Retail
+      - Consumer
+      - Restaurant
+      - Beverage
+      医疗:
+      - Healthcare
+      - Medical
+      - Drug
+      - Biotechnology
+      能源:
+      - Oil
+      - Gas
+      - Energy
+      公用事业:
+      - Utilities
+  scorecard_profile:
+    value_quality_bonus: 1.8
+    capital_confirmed_bonus: 2.4
+    volume_spike_ratio: 5.0
+    hot_money_penalty: 2.5
+  ranking_hints: '美股筛选，价格、市值、成交额单位为美元。量比与换手率是日线/总股本估算口径。优先关注：
+
+    1. 已经确认趋势但还没有进入极端追涨阶段的候选
+
+    2. 基本面质量（估值、资金活跃、稳定性）能为趋势提供支撑
+
+    3. 避免单一题材过度集中，兼顾不同风格的趋势机会
+
+
+    只依据输入数据评价；缺失新闻、财报或指标时明确说明，不推断 A 股涨跌停、北向资金、龙虎榜、筹码或热点板块。
+
+    '
+  max_output: 5

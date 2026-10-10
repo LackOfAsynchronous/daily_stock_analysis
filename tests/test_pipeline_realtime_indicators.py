@@ -89,6 +89,13 @@ class TestAugmentHistoricalWithRealtime(unittest.TestCase):
             self.config = Config._load_from_env()
         self.pipeline = StockAnalysisPipeline(config=self.config)
 
+    def test_postmarket_does_not_overwrite_historical_close(self) -> None:
+        df = _make_historical_df()
+        result = self.pipeline._augment_historical_with_realtime(
+            df, _make_realtime_quote(price=999), "AAPL", market="us",
+            market_phase_context={"phase": "postmarket", "is_partial_bar": False})
+        self.assertIs(result, df)
+
     def test_returns_unchanged_when_realtime_none(self) -> None:
         df = _make_historical_df()
         result = self.pipeline._augment_historical_with_realtime(df, None, "600519")
@@ -187,6 +194,22 @@ class TestEnhanceContextRealtimeOverride(unittest.TestCase):
             Config._instance = None
             self.config = Config._load_from_env()
         self.pipeline = StockAnalysisPipeline(config=self.config)
+
+    def test_postmarket_and_disabled_technical_preserve_completed_daily_bar(self) -> None:
+        context = {"code": "AAPL", "date": "2026-10-09",
+                   "today": {"date": "2026-10-09", "close": 150.0, "ma5": 148.0},
+                   "yesterday": {"close": 149.0}}
+        quote = _make_realtime_quote(price=155.0)
+        trend = TrendAnalysisResult(code="AAPL", trend_status=TrendStatus.BULL,
+                                    ma5=151.0, ma10=150.0, ma20=149.0)
+        enhanced = self.pipeline._enhance_context(context, quote, None, trend,
+            market_phase_context={"phase": "postmarket", "is_partial_bar": False})
+        self.assertEqual(enhanced["today"], context["today"])
+        self.assertIn("realtime", enhanced)
+        self.pipeline.config.enable_realtime_technical_indicators = False
+        disabled = self.pipeline._enhance_context(context, quote, None, trend,
+            market_phase_context={"phase": "intraday", "is_partial_bar": True})
+        self.assertEqual(disabled["today"], context["today"])
 
     @patch("src.core.pipeline.get_market_now")
     @patch("src.core.pipeline.get_market_for_stock", return_value="cn")

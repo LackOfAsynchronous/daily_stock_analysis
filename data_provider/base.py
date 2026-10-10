@@ -2834,14 +2834,9 @@ class DataFetcherManager:
         """Try to get a realtime quote from a named fetcher; returns quote or None."""
         fetcher = self._get_fetcher_by_name(fetcher_name, capability="realtime_quote")
         if fetcher is None or not hasattr(fetcher, 'get_realtime_quote'):
-            record_provider_run(
-                data_type="realtime_quote",
-                provider=fetcher_name,
-                operation="get_realtime_quote",
-                success=False,
-                error_type="unavailable",
-                error_message="fetcher unavailable",
-            )
+            # An unconfigured/unsupported optional provider was never attempted.
+            # Do not turn a successful primary quote into a failed provider run.
+            logger.debug("[实时行情] %s %s 不可用，跳过", stock_code, fetcher_name)
             return None
         attempt_start = time.time()
         try:
@@ -2940,6 +2935,12 @@ class DataFetcherManager:
         # 如果筹码分布功能被禁用，直接返回 None
         if not config.enable_chip_distribution:
             logger.debug(f"[筹码分布] 功能已禁用，跳过 {stock_code}")
+            return None
+
+        # Bundled chip providers expose A-share data only. Unsupported markets
+        # must not register empty responses or trip the shared chip breaker.
+        if _market_tag(stock_code) != "cn":
+            logger.debug("[筹码分布] %s 所属市场不支持筹码数据，跳过", stock_code)
             return None
 
         circuit_breaker = get_chip_circuit_breaker()

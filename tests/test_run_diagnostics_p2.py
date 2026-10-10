@@ -539,3 +539,30 @@ class RunDiagnosticsP2TestCase(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def test_unconfigured_supplements_do_not_degrade_successful_quote() -> None:
+    from src.services.run_diagnostics import _provider_component
+    quote = {"data_type": "realtime_quote", "provider": "YfinanceFetcher", "success": True}
+    unavailable = {"data_type": "realtime_quote", "provider": "LongbridgeFetcher",
+                   "success": False, "error_type": "unavailable"}
+    for runs in ([quote, unavailable], [unavailable, quote]):
+        component = _provider_component(key="realtime_quote", label="实时行情",
+                                        data_type="realtime_quote", provider_runs=runs)
+        assert component.status == "ok"
+        assert component.details["attempts"] == 1
+
+
+def test_real_supplement_failure_is_not_misreported_as_primary_fallback() -> None:
+    from src.services.run_diagnostics import _provider_component
+    quote = {"data_type": "realtime_quote", "provider": "YfinanceFetcher", "success": True}
+    failed = {"data_type": "realtime_quote", "provider": "FinnhubFetcher",
+              "success": False, "error_type": "TimeoutError"}
+    component = _provider_component(key="realtime_quote", label="实时行情",
+                                    data_type="realtime_quote", provider_runs=[quote, failed])
+    assert component.status == "degraded"
+    assert "补充数据源失败" in component.message
+    fallback = _provider_component(key="realtime_quote", label="实时行情",
+                                   data_type="realtime_quote", provider_runs=[failed, quote])
+    assert fallback.status == "degraded"
+    assert "前置数据源失败" in fallback.message

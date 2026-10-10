@@ -250,3 +250,21 @@ def test_pipeline_logs_disabled_realtime_once_without_fetching_quote(caplog):
         if "历史收盘价继续分析" in record.message
     ]
     assert downgrade_logs == ["贵州茅台(600519) 实时行情已禁用，使用历史收盘价继续分析"]
+
+
+def test_unconfigured_optional_quote_provider_is_skipped_without_failure_run() -> None:
+    manager = DataFetcherManager.__new__(DataFetcherManager)
+    with patch.object(manager, "_get_fetcher_by_name", return_value=None), \
+            patch("data_provider.base.record_provider_run") as record:
+        assert manager._try_fetcher_quote("AXTI", "LongbridgeFetcher") is None
+    record.assert_not_called()
+
+
+def test_us_chip_is_skipped_before_provider_attempt_or_circuit_breaker() -> None:
+    manager = DataFetcherManager.__new__(DataFetcherManager)
+    with patch("src.config.get_config", return_value=SimpleNamespace(enable_chip_distribution=True)), \
+            patch.object(manager, "_get_fetchers_snapshot") as providers, \
+            patch("data_provider.base.record_provider_run") as record:
+        assert manager.get_chip_distribution("AXTI") is None
+    providers.assert_not_called()
+    record.assert_not_called()

@@ -555,3 +555,18 @@ def test_builder_module_stays_zero_fetch_and_zero_storage_import(monkeypatch) ->
     pack = reloaded.AnalysisContextBuilder.build(_artifacts())
 
     assert pack.blocks["quote"].status == ContextFieldStatus.AVAILABLE
+
+
+@pytest.mark.parametrize("market", ["us", "hk", "jp", "kr", "tw"])
+def test_unsupported_chip_market_is_not_a_missing_fetch(market) -> None:
+    pack = AnalysisContextBuilder.build(_artifacts(market=market, chip_data=None))
+    assert pack.blocks["chip"].status == ContextFieldStatus.NOT_SUPPORTED
+    assert pack.blocks["chip"].items["chip_distribution"].missing_reason == "chip_not_supported"
+
+
+def test_yahoo_primary_is_available_but_real_fallback_still_marked() -> None:
+    primary = AnalysisContextBuilder.build(_artifacts(realtime_quote=_quote(RealtimeSource.YFINANCE)))
+    assert primary.blocks["quote"].status == ContextFieldStatus.AVAILABLE
+    fallback = AnalysisContextBuilder.build(_artifacts(
+        realtime_quote=_quote(RealtimeSource.YFINANCE, fallback_from="longbridge")))
+    assert fallback.blocks["quote"].status == ContextFieldStatus.FALLBACK

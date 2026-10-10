@@ -650,7 +650,8 @@ class StockAnalysisPipeline:
                     # Issue #234: Augment with realtime for intraday MA calculation
                     if self.config.enable_realtime_quote and realtime_quote:
                         df = self._augment_historical_with_realtime(
-                            df, realtime_quote, code, market=market
+                            df, realtime_quote, code, market=market,
+                            market_phase_context=market_phase_context_dict,
                         )
                     trend_result = self.trend_analyzer.analyze(df, code)
                     logger.info(f"{stock_name}({code}) 趋势分析: {trend_result.trend_status.value}, "
@@ -1098,7 +1099,13 @@ class StockAnalysisPipeline:
 
         # Issue #234：盘中分析使用实时 OHLC 与趋势 MA 覆盖 today。
         # 防护条件：trend_result.ma5 > 0 表示 MA 计算已成功且数据量充足。
-        if realtime_quote and trend_result and trend_result.ma5 > 0:
+        use_realtime_technical = getattr(self.config, 'enable_realtime_technical_indicators', True)
+        partial_session = (
+            not isinstance(market_phase_context, dict)
+            or bool(market_phase_context.get("is_partial_bar"))
+        )
+        if (use_realtime_technical and partial_session
+                and realtime_quote and trend_result and trend_result.ma5 > 0):
             price = getattr(realtime_quote, 'price', None)
             if price is not None and price > 0:
                 yesterday_close = None
@@ -2736,6 +2743,7 @@ class StockAnalysisPipeline:
         realtime_quote: Any,
         code: str,
         market: Optional[str] = None,
+        market_phase_context: Optional[Dict[str, Any]] = None,
     ) -> pd.DataFrame:
         """
         使用当日实时行情补齐历史 OHLCV，用于盘中 MA 计算。
@@ -2754,6 +2762,11 @@ class StockAnalysisPipeline:
             self.config, 'enable_realtime_technical_indicators', True
         )
         if not enable_realtime_tech:
+            return df
+        # The pipeline supplies the resolved session context. Outside an
+        # unfinished session, preserve the provider's completed daily bars.
+        if (isinstance(market_phase_context, dict)
+                and not market_phase_context.get("is_partial_bar")):
             return df
         if market is None:
             market = get_market_for_stock(code)

@@ -317,7 +317,10 @@ def _build_technical_block(
 def _build_chip_block(artifacts: PipelineAnalysisArtifacts) -> AnalysisContextBlock:
     chip = _to_dict(artifacts.chip_data)
     if not chip:
-        not_supported = bool((artifacts.metadata or {}).get("chip_not_supported"))
+        not_supported = (
+            artifacts.market in {"us", "hk", "jp", "kr", "tw"}
+            or bool((artifacts.metadata or {}).get("chip_not_supported"))
+        )
         status = (
             ContextFieldStatus.NOT_SUPPORTED
             if not_supported

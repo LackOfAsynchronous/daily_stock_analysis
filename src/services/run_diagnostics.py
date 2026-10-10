@@ -1173,6 +1173,12 @@ def _provider_component(
         return _component(key, label, "unknown", f"{label}未记录诊断信息")
 
     successes = [run for run in runs if run.get("success") is True]
+    # Older releases emitted failures for optional providers that were never
+    # configured. Retain them if nothing succeeded; otherwise they are skips.
+    if successes:
+        runs = [run for run in runs if not (
+            run.get("success") is False and run.get("error_type") == "unavailable"
+        )]
     failures = [run for run in runs if run.get("success") is False]
     last_run = runs[-1]
     if successes:
@@ -1190,11 +1196,14 @@ def _provider_component(
         }
         details = {key: value for key, value in details.items() if value is not None}
         if failures:
+            first_success_index = next(i for i, run in enumerate(runs) if run.get("success") is True)
+            primary_failed = any(run.get("success") is False for run in runs[:first_success_index])
+            reason = "前置数据源失败后已继续" if primary_failed else "基础数据可用，部分补充数据源失败"
             return _component(
                 key,
                 label,
                 "degraded",
-                f"{label}{provider} 成功，前置数据源失败后已继续",
+                f"{label}{provider} 成功，{reason}",
                 details,
             )
         return _component(

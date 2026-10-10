@@ -12,6 +12,10 @@
 - 筹码分布依赖的 `py_mini_racer` 按构建环境实际安装版本完整收集 Python 模块、原生库和运行数据；不跨版本手工拼接 DLL、ICU 或 snapshot 文件。Windows/macOS 明确要求 `mini-racer>=0.13.2`，避免旧版冻结加载器从 bundle 根目录寻找原生库、与包目录收集布局不一致；Linux 继续沿用 AkShare 原有依赖。Windows/macOS 构建脚本会在源码环境和冻结后的后端中执行 `MiniRacer().eval('1 + 1')`，原生库缺失或版本不匹配会阻断打包。仅成功 `import py_mini_racer` 不足以验收；这一离线检查不代表在线东财接口一定可用。
 - 报告“分享”按钮使用 Electron 自带的隐藏 Chromium 窗口渲染本地后端输出的受限 HTML，并保存为 PNG；桌面安装包无需额外携带 `wkhtmltoimage`、`markdown-to-file` 或 Playwright 浏览器。
 
+## 主导航
+
+桌面端与移动端共用主导航配置；主菜单不再显示「持仓」入口。此界面调整保留既有持仓记录与后端接口。
+
 ## 本地开发
 
 一键启动（开发模式）：

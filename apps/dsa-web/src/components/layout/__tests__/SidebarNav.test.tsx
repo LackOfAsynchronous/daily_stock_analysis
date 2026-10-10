@@ -23,8 +23,9 @@ describe('SidebarNav', () => {
     render(<MemoryRouter initialEntries={['/']}><SidebarNav /></MemoryRouter>);
 
     expect(screen.getByRole('link', { name: '选股' })).toHaveAttribute('href', '/screening');
+    expect(screen.queryByRole('link', { name: '持仓' })).not.toBeInTheDocument();
     const hrefs = screen.getAllByRole('link').map((link) => link.getAttribute('href'));
-    expect(hrefs.slice(0, 5)).toEqual(['/', '/chat', '/screening', '/portfolio', '/decision-signals']);
+    expect(hrefs.slice(0, 5)).toEqual(['/', '/chat', '/screening', '/decision-signals', '/backtest']);
   });
 
   it('shows the shared completion badge only when chat completion is pending', () => {

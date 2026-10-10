@@ -1411,7 +1411,6 @@ const SettingsPage: React.FC = () => {
           <aside className="lg:sticky lg:top-4 lg:self-start">
             <SettingsCategoryNav
               categories={categories}
-              itemsByCategory={itemsByCategory}
               activeCategory={activeCategory}
               onSelect={setActiveCategory}
             />

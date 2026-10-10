@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- [改进] 移除配置分类菜单的字段数量徽标，简化设置导航。
+
 - [改进] 通知设置采用渠道下拉列表，按渠道显示基础凭据、折叠高级参数与发送测试，保留多渠道配置和草稿。
 
 - [优化] 将本机 CLI 与 API 服务商合并到统一的「AI 模型配置」页面，保留分区、下拉选择与高级配置。

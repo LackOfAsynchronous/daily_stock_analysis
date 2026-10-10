@@ -1,15 +1,13 @@
 import type React from 'react';
 import { Bell, Bot, Database, Layers3, LineChart, Settings2, SlidersHorizontal } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { Badge } from '../common';
 import { useUiLanguage } from '../../contexts/UiLanguageContext';
 import { getCategoryDescription, getCategoryTitle } from '../../utils/systemConfigI18n';
-import type { SystemConfigCategory, SystemConfigCategorySchema, SystemConfigItem } from '../../types/systemConfig';
+import type { SystemConfigCategory, SystemConfigCategorySchema } from '../../types/systemConfig';
 import { cn } from '../../utils/cn';
 
 interface SettingsCategoryNavProps {
   categories: SystemConfigCategorySchema[];
-  itemsByCategory: Record<string, SystemConfigItem[]>;
   activeCategory: string;
   onSelect: (category: string) => void;
 }
@@ -26,7 +24,6 @@ const categoryIconMap: Partial<Record<SystemConfigCategory, LucideIcon>> = {
 
 export const SettingsCategoryNav: React.FC<SettingsCategoryNavProps> = ({
   categories,
-  itemsByCategory,
   activeCategory,
   onSelect,
 }) => {
@@ -45,7 +42,6 @@ export const SettingsCategoryNav: React.FC<SettingsCategoryNavProps> = ({
       <div className="flex gap-2 overflow-x-auto pb-1 lg:block lg:space-y-1.5 lg:overflow-visible lg:pb-0">
         {categories.map((category) => {
           const isActive = category.category === activeCategory;
-          const count = (itemsByCategory[category.category] || []).length;
           const title = getCategoryTitle(category.category, category.title, language);
           const description = getCategoryDescription(category.category, category.description, language);
           const Icon = categoryIconMap[category.category] ?? Layers3;
@@ -77,18 +73,6 @@ export const SettingsCategoryNav: React.FC<SettingsCategoryNavProps> = ({
                   </span>
                 ) : null}
               </span>
-              <Badge
-                variant={isActive ? 'info' : 'default'}
-                size="sm"
-                className={cn(
-                  'shrink-0 px-1.5 py-0 text-[11px]',
-                  isActive
-                    ? 'settings-accent-badge border-[hsl(var(--primary)/0.32)]'
-                    : 'border-[var(--settings-border)] bg-[var(--settings-surface)] text-muted-text',
-                )}
-              >
-                {count}
-              </Badge>
             </button>
           );
         })}

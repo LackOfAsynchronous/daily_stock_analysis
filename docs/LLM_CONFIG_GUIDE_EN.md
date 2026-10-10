@@ -1,5 +1,17 @@
 # LLM Configuration Guide
 
+## Desktop settings: local CLI and API providers
+
+Model connections are split into **Local CLI** and **API providers**:
+
+- **Local CLI** contains the global Codex switch, runtime status, and connection tests. Backend, timeout, and concurrency controls are under CLI advanced settings. A local CLI can still use cloud services and account quotas.
+- **API providers** starts with a provider selector. Select a built-in provider or an existing custom channel to configure its saved credentials or add a channel. Model assignments and advanced parameters contain primary, chat, vision, and fallback model settings.
+- Selection only changes the displayed provider. It does not activate a provider, change the runtime, delete saved keys, or discard another provider's channel draft. New channels need valid configuration and an explicit save. When global Codex is enabled, the API panel indicates that Codex still generates analyses.
+
+**Data sources** also uses a selector for quote and news providers. Credentials appear after selection; provider-specific parameters are collapsed under advanced settings. Shared fetching switches and source priorities remain under common advanced settings. Free fetchers such as Yahoo Finance, AkShare, and Baostock require no API key; availability depends on the market and network. Selecting a source does not change its priority.
+
+This is a UI reorganization using the existing configuration fields, secret masks, and save protocol. No `.env` migration is required.
+
 Welcome! Whether you are a beginner newly exposed to AI or a veteran skilled with various APIs, this guide will help you set up Large Language Models (LLMs) quickly.
 
 This project exposes a unified AI model access flow that supports official APIs, OpenAI-compatible platforms, and local models. Under the hood it is powered by [LiteLLM](https://docs.litellm.ai/), but most users only need to think in terms of picking a provider, adding an API key, and optionally choosing a primary model or channels. To cater to different experience levels, we provide a three-tier configuration hierarchy. Choose the method that fits you best.

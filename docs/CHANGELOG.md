@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- [优化] 模型设置分为本机 CLI 与 API 服务商，API 和数据源采用下拉选择及折叠高级配置，保留已有密钥与跨服务商草稿。
+
 - [新功能] 全局 Codex 支持从运行时私有数据目录加载用户投资研究记忆，保留历史资料边界并支持修改后自动生效。
 - [新功能] 新增全局本机 Codex 开关，覆盖报告、选股、问股、多 Agent、Deep Research、压缩及图片识别，保留原模型配置并禁用 API 回退。
 

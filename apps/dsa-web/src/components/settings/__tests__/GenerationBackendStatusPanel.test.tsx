@@ -127,7 +127,7 @@ describe('GenerationBackendStatusPanel', () => {
       />,
     );
 
-    fireEvent.click(await screen.findByRole('button', { name: /JSON 冒烟测试/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /测试模型连接/ }));
 
     await waitFor(() => {
       expect(testGenerationBackend).toHaveBeenCalledWith({
@@ -147,7 +147,7 @@ describe('GenerationBackendStatusPanel', () => {
       />,
     );
 
-    fireEvent.click(await screen.findByRole('button', { name: /JSON 冒烟测试/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /测试模型连接/ }));
     expect(await screen.findByText('冒烟测试通过')).toBeInTheDocument();
 
     rerender(
@@ -222,7 +222,7 @@ describe('GenerationBackendStatusPanel', () => {
 
     render(<GenerationBackendStatusPanel items={[]} maskToken="******" />);
 
-    fireEvent.click(screen.getByRole('button', { name: /JSON 冒烟测试/ }));
+    fireEvent.click(screen.getByRole('button', { name: /测试模型连接/ }));
 
     expect(await screen.findByText('冒烟测试通过')).toBeInTheDocument();
     expect(await screen.findByText('codex_cli')).toBeInTheDocument();

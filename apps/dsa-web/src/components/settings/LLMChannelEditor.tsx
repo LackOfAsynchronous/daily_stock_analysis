@@ -97,6 +97,7 @@ const hasRuntimeOnlyMaskedHermesSecret = (
 const RUNTIME_ONLY_HERMES_SECRET_MESSAGE = '运行时注入的 Hermes Key 不会回传；如需在设置页测试，请重新输入 Key 或保存到 .env。';
 
 interface ChannelConfig {
+  providerGroup?: string;
   id: string;
   name: string;
   protocol: ChannelProtocol;
@@ -137,6 +138,7 @@ interface RuntimeConfig {
 }
 
 interface LLMChannelEditorProps {
+  selectedProvider?: string;
   items: Array<{ key: string; value: string; rawValueExists?: boolean }>;
   configVersion: string;
   maskToken: string;
@@ -1476,6 +1478,7 @@ function parseChannelsFromItems(
 
     return {
       id: `parsed:${index}:${upperName}`,
+      providerGroup: name,
       name: name.toLowerCase(),
       protocol: inferProtocol(itemMap.get(`LLM_${upperName}_PROTOCOL`) || '', baseUrl, models),
       apiSurface: normalizeApiSurface(itemMap.get(`LLM_${upperName}_API_SURFACE`)),
@@ -1635,6 +1638,7 @@ export const LLMChannelEditor: React.FC<LLMChannelEditorProps> = ({
   items,
   configVersion,
   maskToken,
+  selectedProvider,
   modelProviderPrefixes = [],
   onSaved,
   onDraftItemsChange,
@@ -1950,14 +1954,14 @@ export const LLMChannelEditor: React.FC<LLMChannelEditorProps> = ({
     setExpandedRows({});
   };
 
-  const addChannel = () => {
-    const preset = getProviderTemplate(addPreset) || getProviderTemplate('custom');
+  const addChannel = (presetId: string = addPreset) => {
+    const preset = getProviderTemplate(presetId) || getProviderTemplate('custom');
     if (!preset) {
       return;
     }
     setChannels((previous) => {
       const existingNames = new Set(previous.map((channel) => channel.name));
-      const baseName = addPreset === 'custom' ? 'custom' : addPreset;
+      const baseName = presetId === 'custom' ? 'custom' : presetId;
       let nextName = baseName;
       let counter = 2;
       while (existingNames.has(nextName)) {
@@ -1970,6 +1974,7 @@ export const LLMChannelEditor: React.FC<LLMChannelEditorProps> = ({
         {
           id: `added:${addChannelIdRef.current += 1}`,
           name: nextName,
+          providerGroup: presetId,
           protocol: preset.protocol,
           apiSurface: 'chat_completions',
           baseUrl: preset.baseUrl,
@@ -2345,9 +2350,15 @@ export const LLMChannelEditor: React.FC<LLMChannelEditorProps> = ({
     });
   };
 
+  const scopedChannels = channels.map((channel, index) => ({ channel, index })).filter(({ channel }) => {
+    const group = channel.providerGroup ?? channel.name;
+    return selectedProvider === undefined || group === selectedProvider
+      || (group.startsWith(selectedProvider) && /^\d+$/.test(group.slice(selectedProvider.length)));
+  });
+
   return (
-    <div className="space-y-4">
-      <button
+    <div className="space-y-4" hidden={selectedProvider === ''}>
+      {selectedProvider === undefined ? <button
         type="button"
         className="flex w-full items-center justify-between rounded-[1.35rem] border border-[var(--settings-border)] bg-[var(--settings-surface)] px-5 py-4 text-left shadow-soft-card transition-[background-color,border-color,box-shadow] duration-200 hover:border-[var(--settings-border-strong)] hover:bg-[var(--settings-surface-hover)]"
         onClick={() => setIsCollapsed((previous) => !previous)}
@@ -2362,11 +2373,11 @@ export const LLMChannelEditor: React.FC<LLMChannelEditorProps> = ({
           </p>
         </div>
         <span className="text-xs text-muted-text">{isCollapsed ? '▶ 展开' : '▼ 收起'}</span>
-      </button>
+      </button> : null}
 
-      {!isCollapsed ? (
+      {(selectedProvider !== undefined || !isCollapsed) ? (
         <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
-          <div className="rounded-[1.35rem] border border-[var(--settings-border)] bg-[var(--settings-surface)] p-4 shadow-soft-card">
+          {selectedProvider === undefined ? (          <div className="rounded-[1.35rem] border border-[var(--settings-border)] bg-[var(--settings-surface)] p-4 shadow-soft-card">
             <div className="mb-3 flex items-center justify-between">
               <div>
                 <h4 className="text-sm font-medium text-foreground">快速添加渠道</h4>
@@ -2375,7 +2386,7 @@ export const LLMChannelEditor: React.FC<LLMChannelEditorProps> = ({
               <Badge variant="default" className="border-[var(--settings-border)] bg-[var(--settings-surface-hover)] text-muted-text">{channels.length} 个渠道</Badge>
             </div>
             <div className="flex items-center gap-2">
-              <Button type="button" variant="settings-primary" className="whitespace-nowrap" disabled={busy} onClick={addChannel}>
+              <Button type="button" variant="settings-primary" className="whitespace-nowrap" disabled={busy} onClick={() => addChannel()}>
                 + 添加渠道
               </Button>
               <Select
@@ -2390,7 +2401,10 @@ export const LLMChannelEditor: React.FC<LLMChannelEditorProps> = ({
                 className="flex-1"
               />
             </div>
-          </div>
+          </div>) : selectedProvider ? (
+            <Button type="button" variant="settings-secondary" disabled={busy}
+              onClick={() => addChannel(selectedProvider)}>+ 添加该服务商渠道</Button>
+          ) : null}
 
           <div className="space-y-2">
             <div className="flex items-center justify-between px-1">
@@ -2400,12 +2414,12 @@ export const LLMChannelEditor: React.FC<LLMChannelEditorProps> = ({
               ) : null}
             </div>
 
-            {channels.length === 0 ? (
+            {scopedChannels.length === 0 ? (
               <div className="settings-surface-overlay-muted rounded-[1.35rem] border border-dashed settings-border-strong px-4 py-10 text-center">
                 <p className="text-sm font-medium text-secondary-text">还没有渠道</p>
                 <p className="mt-1 text-xs text-muted-text">选择服务商预设后点击“添加渠道”即可开始配置。</p>
               </div>
-            ) : channels.map((channel, index) => (
+            ) : scopedChannels.map(({ channel, index }) => (
               <ChannelRow
                 key={channel.id}
                 channel={channel}
@@ -2429,6 +2443,8 @@ export const LLMChannelEditor: React.FC<LLMChannelEditorProps> = ({
             ))}
           </div>
 
+          {selectedProvider !== '' ? <details open={selectedProvider === undefined} className="rounded-xl border settings-border p-4">
+            <summary className="cursor-pointer text-sm font-medium text-foreground">模型分配与高级参数</summary>
           {managesRuntimeConfig ? (
             <div className="rounded-[1.35rem] border border-[var(--settings-border)] bg-[var(--settings-surface)] p-4 shadow-soft-card">
               <div className="mb-4 flex items-center justify-between">
@@ -2574,6 +2590,8 @@ export const LLMChannelEditor: React.FC<LLMChannelEditorProps> = ({
               className="rounded-[1.35rem] px-4 py-3 text-xs shadow-none"
             />
           )}
+
+          </details> : null}
 
           <div className="flex flex-wrap items-center gap-3">
             <Button

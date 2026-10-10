@@ -212,7 +212,7 @@ export function useSystemConfig() {
 
       const defaultCategory = sorted[0]?.schema?.category || 'base';
       setActiveCategory((current) => {
-        const exists = sorted.some((item) => item.schema?.category === current);
+        const exists = sorted.some((item) => item.schema?.category === (current === 'local_cli' ? 'ai_model' : current));
         return exists ? current : defaultCategory;
       });
       setValidationIssues([]);

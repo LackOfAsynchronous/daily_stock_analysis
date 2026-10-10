@@ -25,6 +25,9 @@ import {
   SettingsPanelErrorBoundary,
   SettingsSectionCard,
 } from '../components/settings';
+import { ConnectionFields, ProviderSelector } from '../components/settings/ConnectionFields';
+import { CLI_KEYS, DATA_PROVIDERS, apiProviderForKey, dataProviderForKey } from '../components/settings/connectionSettingsGroups';
+import { LLM_PROVIDER_TEMPLATES } from '../components/settings/llmProviderTemplates';
 import { WEB_BUILD_INFO } from '../utils/constants';
 import { parseStockListValue } from '../utils/stockList';
 import { getCategoryDescription, getCategoryTitle } from '../utils/systemConfigI18n';
@@ -815,7 +818,7 @@ const SettingsPage: React.FC = () => {
 
   useEffect(() => {
     const requestedCategory = new URLSearchParams(location.search).get('category');
-    if (requestedCategory && categories.some((category) => category.category === requestedCategory)) {
+    if (requestedCategory && (requestedCategory === 'local_cli' || categories.some((category) => category.category === requestedCategory))) {
       setActiveCategory(requestedCategory);
     }
   }, [categories, location.search, setActiveCategory]);
@@ -847,7 +850,21 @@ const SettingsPage: React.FC = () => {
     };
   }, [clearToast, toast]);
 
-  const rawActiveItems = itemsByCategory[activeCategory] || [];
+  const [selectedApiProvider, setSelectedApiProvider] = useState('');
+  const [selectedDataProvider, setSelectedDataProvider] = useState('');
+  const aiItems = itemsByCategory.ai_model || [];
+  const dataItems = itemsByCategory.data_source || [];
+  const apiItems = [...aiItems, ...dataItems.filter((item) => item.key === 'ANSPIRE_API_KEYS')];
+  const apiProviderOptions = LLM_PROVIDER_TEMPLATES.map((preset) => ({ value: preset.channelId, label: preset.label }));
+  for (const name of String(getConfigItem(aiItems, 'LLM_CHANNELS')?.value || '').split(',').map((name) => name.trim()).filter(Boolean)) {
+    if (!apiProviderOptions.some((option) => option.value === name)) apiProviderOptions.push({ value: name, label: name + ' · 已配置渠道' });
+  }
+  const navigationCategories = categories.flatMap((category) => category.category === 'ai_model' ? [
+    { ...category, category: 'local_cli' as SystemConfigCategory, title: '本机 CLI', fields: category.fields.filter((field) => CLI_KEYS.has(field.key)) },
+    category,
+  ] : [category]);
+  const navigationItems = { ...itemsByCategory, local_cli: aiItems.filter((item) => CLI_KEYS.has(item.key)), ai_model: aiItems.filter((item) => !CLI_KEYS.has(item.key)) };
+  const rawActiveItems = (activeCategory === 'local_cli' ? aiItems : itemsByCategory[activeCategory]) || [];
   const rawActiveItemMap = new Map(rawActiveItems.map((item) => [item.key, String(item.value ?? '')]));
   const firstSetupStockCode = parseSetupStockList(getConfigItem(itemsByCategory.base || [], 'STOCK_LIST')?.value)[0] || '';
   const screeningItem = (itemsByCategory.base || []).find((item) => item.key === 'SCREENING_ENABLED');
@@ -1217,7 +1234,34 @@ const SettingsPage: React.FC = () => {
     expected: 'single',
     actual: selectedAgentArch,
   };
-  const activeConfigPanel = hasActiveConfigItems ? (
+  const renderConnectionFields = (items: SystemConfigItem[], title?: string, collapseAdvanced = true) => (
+    <ConnectionFields items={items} title={title} collapseAdvanced={collapseAdvanced} onChange={setDraftValue} issues={issueByKey} disabled={isSaving || isImportingEnv} />
+  );
+  const apiLegacyItems = apiItems.filter((item) => apiProviderForKey(item.key) === selectedApiProvider);
+  const configuredChannelPrefixes = String(getConfigItem(aiItems, 'LLM_CHANNELS')?.value || '').split(',')
+    .map((name) => name.trim().toUpperCase()).filter(Boolean).map((name) => `LLM_${name}_`);
+  const apiCommonItems = aiItems.filter((item) => !CLI_KEYS.has(item.key) && !apiProviderForKey(item.key)
+    && !(LLM_CHANNEL_KEY_RE.test(item.key) && configuredChannelPrefixes.some((prefix) => item.key.startsWith(prefix))) && (!hasConfiguredChannels || !LLM_CHANNEL_EDITOR_RUNTIME_KEYS.has(item.key)) && item.key !== 'LLM_CHANNELS');
+  const activeConfigPanel = activeCategory === 'local_cli' ? (
+    <SettingsSectionCard title="本机 CLI" description="通过本机已安装并登录的工具调用模型；仍可能使用云服务和账号额度。">
+      {aiItems.filter((item) => item.key === 'LOCAL_CODEX_MODE').map((item) => <SettingsField key={item.key} item={item} value={item.value} disabled={isSaving || isImportingEnv} onChange={setDraftValue} issues={issueByKey[item.key] || []} />)}
+      <GenerationBackendStatusPanel items={generationBackendDraftItems} maskToken={maskToken} disabled={isSaving || isLoading || isImportingEnv} />
+      <details className="rounded-xl border settings-border p-4"><summary className="cursor-pointer text-sm font-medium">CLI 高级配置</summary>
+        {renderConnectionFields(aiItems.filter((item) => CLI_KEYS.has(item.key) && item.key !== 'LOCAL_CODEX_MODE'), undefined, false)}
+      </details>
+    </SettingsSectionCard>
+  ) : activeCategory === 'data_source' ? (
+    <SettingsSectionCard title="数据源" description="分别配置行情与新闻来源。选择下拉项只切换配置视图，不改变数据源优先级。">
+      <ProviderSelector label="选择数据源" value={selectedDataProvider} onChange={setSelectedDataProvider} disabled={isSaving || isImportingEnv}
+        options={DATA_PROVIDERS.map(([value, label]) => ({ value, label }))}>
+        {renderConnectionFields(dataItems.filter((item) => dataProviderForKey(item.key) === selectedDataProvider))}
+        {!dataItems.some((item) => dataProviderForKey(item.key) === selectedDataProvider) ? <p className="text-sm text-muted-text">{['yfinance', 'akshare', 'baostock'].includes(selectedDataProvider) ? '该免费来源不需要 API Key，使用已有自动抓取与备用路径；是否可用取决于市场和网络。' : '当前版本没有此来源的独立配置字段，请查看通用高级配置中的抓取策略。'}</p> : null}
+      </ProviderSelector>
+      <details className="rounded-xl border settings-border p-4"><summary className="cursor-pointer text-sm font-medium">通用高级配置 · 优先级与抓取策略</summary>
+        {renderConnectionFields(dataItems.filter((item) => !dataProviderForKey(item.key)), undefined, false)}
+      </details>
+    </SettingsSectionCard>
+  ) : activeCategory === 'ai_model' ? null : hasActiveConfigItems ? (
     <SettingsSectionCard
       title={activeCategoryTitle}
       description={activeCategoryDescription || t('settings.activePanelDescription')}
@@ -1345,8 +1389,8 @@ const SettingsPage: React.FC = () => {
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-[260px_minmax(0,1fr)]">
           <aside className="lg:sticky lg:top-4 lg:self-start">
             <SettingsCategoryNav
-              categories={categories}
-              itemsByCategory={itemsByCategory}
+              categories={navigationCategories}
+              itemsByCategory={navigationItems}
               activeCategory={activeCategory}
               onSelect={setActiveCategory}
             />
@@ -1607,25 +1651,20 @@ const SettingsPage: React.FC = () => {
             {activeCategory === 'ai_model' || llmChannelHasDirty || llmChannelIsSaving ? (
               <div hidden={activeCategory !== 'ai_model'}>
               <SettingsSectionCard
-                title={t('settings.llmAccess')}
-                description={t('settings.llmAccessDescription')}
+                title="API 服务商"
+                description="先选择服务商，再配置密钥、模型和高级参数。已有密钥保留，选择服务商不会自动切换正在使用的模型。"
               >
-                {activeItems.filter((item) => item.key === 'LOCAL_CODEX_MODE').map((item) => (
-                  <SettingsField
-                    key={item.key}
-                    item={item}
-                    value={item.value}
-                    disabled={isSaving || isImportingEnv}
-                    onChange={setDraftValue}
-                    issues={issueByKey[item.key] || []}
-                  />
-                ))}
-                <GenerationBackendStatusPanel
-                  items={generationBackendDraftItems}
-                  maskToken={maskToken}
-                  disabled={isSaving || isLoading || isImportingEnv}
-                />
+                <p className="rounded-xl bg-[var(--settings-surface-hover)] p-3 text-sm text-secondary-text">
+                  {String(getConfigItem(aiItems, 'LOCAL_CODEX_MODE')?.value) === 'true'
+                    ? '当前使用：本机 Codex（全局）。此处只管理 API 配置；如需改用 API，请先在“本机 CLI”关闭全局 Codex。'
+                    : `当前分析生成方式：${getConfigItem(aiItems, 'GENERATION_BACKEND')?.value || 'litellm'}。选中服务商不会自动修改运行方式。`}
+                </p>
+                <ProviderSelector label="选择 API 服务商" value={selectedApiProvider} onChange={setSelectedApiProvider}
+                  options={apiProviderOptions} disabled={isSaving || isLoading || isImportingEnv}>
+                  {apiLegacyItems.length ? renderConnectionFields(apiLegacyItems, '服务商配置 · 已有配置保留') : null}
+                </ProviderSelector>
                 <LLMChannelEditor
+                  selectedProvider={selectedApiProvider}
                   draftResetToken={localDraftResetToken}
                   onDirtyChange={setLlmChannelHasDirty}
                   onSavingChange={setLlmChannelIsSaving}
@@ -1641,6 +1680,9 @@ const SettingsPage: React.FC = () => {
                   }}
                   disabled={isSaving || isLoading || isImportingEnv}
                 />
+                {selectedApiProvider ? <details className="rounded-xl border settings-border p-4"><summary className="cursor-pointer text-sm font-medium">API 通用高级配置</summary>
+                  {renderConnectionFields(apiCommonItems, undefined, false)}
+                </details> : null}
               </SettingsSectionCard>
               </div>
             ) : null}

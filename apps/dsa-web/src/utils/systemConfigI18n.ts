@@ -5,7 +5,8 @@ const categoryTitleMap: Record<UiLanguage, Record<SystemConfigCategory, string>>
   zh: {
   base: '基础设置',
   data_source: '数据源',
-  ai_model: 'AI 模型',
+  ai_model: 'API 服务商',
+  local_cli: '本机 CLI',
   notification: '通知渠道',
   system: '系统设置',
   agent: 'Agent 设置',
@@ -15,7 +16,8 @@ const categoryTitleMap: Record<UiLanguage, Record<SystemConfigCategory, string>>
   en: {
     base: 'Base settings',
     data_source: 'Data sources',
-    ai_model: 'AI models',
+    ai_model: 'API providers',
+    local_cli: 'Local CLI',
     notification: 'Notifications',
     system: 'System',
     agent: 'Agent',
@@ -28,7 +30,8 @@ const categoryDescriptionMap: Record<UiLanguage, Partial<Record<SystemConfigCate
   zh: {
   base: '管理自选股与基础运行参数。',
   data_source: '管理行情数据源与优先级策略。',
-  ai_model: '管理模型服务、模型名称与推理参数。',
+  ai_model: '选择服务商，配置密钥与模型。',
+  local_cli: '使用本机已安装并登录的命令行工具。',
   notification: '管理机器人、Webhook 和消息推送配置。',
   system: '管理调度、日志、端口等系统级参数。',
   agent: '管理 Agent 模式、策略与多 Agent 编排配置。',
@@ -38,7 +41,8 @@ const categoryDescriptionMap: Record<UiLanguage, Partial<Record<SystemConfigCate
   en: {
     base: 'Manage watchlists and base runtime parameters.',
     data_source: 'Manage market data sources and priority strategies.',
-    ai_model: 'Manage model services, model names, and inference parameters.',
+    ai_model: 'Select a provider and configure credentials and models.',
+    local_cli: 'Use command-line tools installed and signed in on this device.',
     notification: 'Manage bots, webhooks, and notification delivery.',
     system: 'Manage scheduling, logging, ports, and system parameters.',
     agent: 'Manage Agent mode, strategies, and multi-agent orchestration.',

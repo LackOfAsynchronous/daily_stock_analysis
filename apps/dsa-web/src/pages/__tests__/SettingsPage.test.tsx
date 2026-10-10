@@ -1339,10 +1339,12 @@ describe('SettingsPage', () => {
       ],
     }));
 
-    renderSettingsPage();
+    const page = renderSettingsPage();
 
     fireEvent.click(screen.getByRole('button', { name: 'emit llm draft' }));
 
+    useSystemConfigMock.mockReturnValue({ ...useSystemConfigMock.mock.results.at(-1)!.value, activeCategory: 'local_cli' });
+    page.rerenderSettingsPage();
     const statusItems = await screen.findByTestId('generation-backend-status-items');
     await waitFor(() => {
       expect(statusItems).toHaveTextContent('GENERATION_BACKEND=litellm');
@@ -1360,13 +1362,14 @@ describe('SettingsPage', () => {
   it('clears llm channel draft items after llm channel editor saves', async () => {
     useSystemConfigMock.mockReturnValue(buildSystemConfigState({ activeCategory: 'ai_model' }));
 
-    renderSettingsPage();
+    const page = renderSettingsPage();
 
     fireEvent.click(screen.getByRole('button', { name: 'emit llm draft' }));
-    expect(await screen.findByTestId('generation-backend-status-items')).toHaveTextContent('LLM_CHANNELS=draft,backup');
 
     fireEvent.click(screen.getByRole('button', { name: 'save llm channels' }));
 
+    useSystemConfigMock.mockReturnValue({ ...useSystemConfigMock.mock.results.at(-1)!.value, activeCategory: 'local_cli' });
+    page.rerenderSettingsPage();
     await waitFor(() => {
       expect(screen.getByTestId('generation-backend-status-items')).not.toHaveTextContent('LLM_CHANNELS=draft,backup');
     });
@@ -1408,11 +1411,12 @@ describe('SettingsPage', () => {
 
     const { container } = renderSettingsPage();
 
-    const promptCacheSummary = screen.getByText('Provider Prompt Cache 高级设置').closest('summary');
+    fireEvent.change(screen.getByRole('combobox', { name: '选择 API 服务商' }), { target: { value: 'openai' } });
+    const promptCacheSummary = screen.getByText('API 通用高级配置').closest('summary');
     const promptCacheDetails = promptCacheSummary?.closest('details');
-    const telemetryField = screen.getByTestId('settings-field-LLM_PROMPT_CACHE_TELEMETRY_ENABLED');
-    const hintsField = screen.getByTestId('settings-field-LLM_PROMPT_CACHE_HINTS_ENABLED');
-    const diagnosticsField = screen.getByTestId('settings-field-LLM_PROMPT_CACHE_DIAGNOSTICS_LEVEL');
+    const telemetryField = container.querySelector<HTMLElement>('#setting-LLM_PROMPT_CACHE_TELEMETRY_ENABLED');
+    const hintsField = container.querySelector<HTMLElement>('#setting-LLM_PROMPT_CACHE_HINTS_ENABLED');
+    const diagnosticsField = container.querySelector<HTMLElement>('#setting-LLM_PROMPT_CACHE_DIAGNOSTICS_LEVEL');
 
     expect(promptCacheSummary).toBeInTheDocument();
     expect(promptCacheDetails).toBeInTheDocument();
@@ -1431,11 +1435,11 @@ describe('SettingsPage', () => {
     expect(hintsField).toBeVisible();
     expect(diagnosticsField).toBeVisible();
 
-    expect(Array.from(container.querySelectorAll('[data-testid^="settings-field-"]')).map((node) => node.getAttribute('data-testid'))).toEqual([
-      'settings-field-LITELLM_CONFIG',
-      'settings-field-LLM_PROMPT_CACHE_TELEMETRY_ENABLED',
-      'settings-field-LLM_PROMPT_CACHE_HINTS_ENABLED',
-      'settings-field-LLM_PROMPT_CACHE_DIAGNOSTICS_LEVEL',
+    expect(Array.from(container.querySelectorAll('[id^="setting-"]')).map((node) => node.id)).toEqual([
+      'setting-LITELLM_CONFIG',
+      'setting-LLM_PROMPT_CACHE_TELEMETRY_ENABLED',
+      'setting-LLM_PROMPT_CACHE_HINTS_ENABLED',
+      'setting-LLM_PROMPT_CACHE_DIAGNOSTICS_LEVEL',
     ]);
   });
 
@@ -2945,6 +2949,7 @@ describe('SettingsPage', () => {
       editorTestMode.real = true;
       useSystemConfigMock.mockReturnValue(buildSystemConfigState({ activeCategory: 'ai_model', hasDirty: false }));
       const page = renderSettingsPage();
+      fireEvent.change(screen.getByRole('combobox', { name: '选择 API 服务商' }), { target: { value: 'primary' } });
       fireEvent.click(await screen.findByRole('button', { name: /primary/i }));
       fireEvent.change(await screen.findByLabelText('渠道名称'), { target: { value: 'UNSAVED_NAME' } });
       await waitFor(() => expect(beforeUnloadListeners.length).toBe(1));
@@ -2961,6 +2966,7 @@ describe('SettingsPage', () => {
       expect(screen.getByLabelText('渠道名称')).toBeVisible();
       fireEvent.click(screen.getByRole('button', { name: '重置' }));
       await waitFor(() => expect(beforeUnloadListeners.length).toBe(0));
+      fireEvent.change(screen.getByRole('combobox', { name: '选择 API 服务商' }), { target: { value: 'primary' } });
       fireEvent.click(await screen.findByRole('button', { name: /primary/i }));
       expect(await screen.findByLabelText('渠道名称')).toHaveValue('primary');
     });
@@ -2975,6 +2981,7 @@ describe('SettingsPage', () => {
       useSystemConfigMock.mockReturnValue(configState);
       const page = renderSettingsPage();
 
+      fireEvent.change(screen.getByRole('combobox', { name: '选择 API 服务商' }), { target: { value: 'primary' } });
       fireEvent.click(await screen.findByRole('button', { name: /primary/i }));
       fireEvent.change(await screen.findByLabelText('Base URL'), { target: { value: 'https://draft.example.com/v1' } });
       fireEvent.click(screen.getByRole('button', { name: '保存 AI 配置' }));
@@ -3031,10 +3038,11 @@ describe('SettingsPage', () => {
       const configState = buildSystemConfigState({ activeCategory: 'ai_model' });
       useSystemConfigMock.mockReturnValue(configState);
       const page = renderSettingsPage();
+      fireEvent.change(screen.getByRole('combobox', { name: '选择 API 服务商' }), { target: { value: 'primary' } });
       fireEvent.click(await screen.findByRole('button', { name: /primary/i }));
       fireEvent.change(await screen.findByLabelText('渠道名称'), { target: { value: '' } });
       await waitFor(() => expect(beforeUnloadListeners).toHaveLength(1));
-      expect(screen.getByTestId('generation-backend-status-items')).toBeEmptyDOMElement();
+      expect(screen.queryByTestId('generation-backend-status-items')).not.toBeInTheDocument();
 
       useSystemConfigMock.mockReturnValue({ ...configState, activeCategory: 'system' });
       page.rerenderSettingsPage();
@@ -3072,7 +3080,8 @@ describe('SettingsPage', () => {
         };
         useSystemConfigMock.mockReturnValue(configState);
         const page = renderSettingsPage();
-        fireEvent.click(await screen.findByRole('button', { name: /primary/i }));
+        fireEvent.change(screen.getByRole('combobox', { name: '选择 API 服务商' }), { target: { value: 'primary' } });
+      fireEvent.click(await screen.findByRole('button', { name: /primary/i }));
         fireEvent.change(await screen.findByLabelText('渠道名称'), { target: { value: '' } });
         useSystemConfigMock.mockReturnValue({ ...configState, activeCategory: 'system' });
         page.rerenderSettingsPage();
@@ -3111,7 +3120,8 @@ describe('SettingsPage', () => {
         useSystemConfigMock.mockReturnValue(configState);
         page.rerenderSettingsPage();
         if (!screen.queryByLabelText('渠道名称')) {
-          fireEvent.click(await screen.findByRole('button', { name: /primary/i }));
+          fireEvent.change(screen.getByRole('combobox', { name: '选择 API 服务商' }), { target: { value: 'primary' } });
+      fireEvent.click(await screen.findByRole('button', { name: /primary/i }));
         }
         expect(await screen.findByLabelText('渠道名称')).toHaveValue(outcome === 'import-failed' ? '' : 'primary');
         if (outcome !== 'import-failed') {

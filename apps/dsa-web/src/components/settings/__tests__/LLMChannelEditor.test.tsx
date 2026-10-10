@@ -2402,3 +2402,29 @@ describe('LLMChannelEditor', () => {
     });
   });
 });
+
+
+it('scopes visible channels without losing or renumbering hidden drafts', async () => {
+  const items = [
+    {key:'LLM_CHANNELS',value:'deepseek,openai'},
+    {key:'LLM_DEEPSEEK_PROTOCOL',value:'deepseek'},
+    {key:'LLM_DEEPSEEK_API_KEY',value:'******'},
+    {key:'LLM_DEEPSEEK_MODELS',value:'deepseek-chat'},
+    {key:'LLM_OPENAI_PROTOCOL',value:'openai'},
+    {key:'LLM_OPENAI_API_KEY',value:'******'},
+    {key:'LLM_OPENAI_MODELS',value:'test-model'},
+  ];
+  const onDraftItemsChange=vi.fn();
+  const props={items,configVersion:'v1',maskToken:'******',onSaved:vi.fn(),onDraftItemsChange};
+  const view=render(<LLMChannelEditor {...props} selectedProvider="openai" />);
+  expect(screen.queryByText('deepseek-chat')).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button',{name:'+ 添加该服务商渠道'}));
+  expect(screen.getByDisplayValue('openai2')).toBeInTheDocument();
+  view.rerender(<LLMChannelEditor {...props} selectedProvider="deepseek" />);
+  expect(screen.queryByDisplayValue('openai2')).not.toBeInTheDocument();
+  view.rerender(<LLMChannelEditor {...props} selectedProvider="openai" />);
+  expect(screen.getByDisplayValue('openai2')).toBeInTheDocument();
+  await waitFor(()=>expect(onDraftItemsChange).toHaveBeenCalled());
+  const draft=onDraftItemsChange.mock.calls.at(-1)?.[0];
+  expect(draft.some((item:{key:string;value:string})=>item.key==='LLM_CHANNELS' && item.value.includes('deepseek') && item.value.includes('openai2'))).toBe(true);
+});

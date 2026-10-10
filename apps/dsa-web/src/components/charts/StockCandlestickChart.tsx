@@ -88,7 +88,6 @@ export default function StockCandlestickChart({ stockCode }: { stockCode: string
     {loading ? <p role="status" className="py-16 text-center text-muted-text">{en ? 'Loading historical prices…' : '正在加载历史行情…'}</p>
       : state.error || !rows.length ? <p role="status" className="py-16 text-center text-muted-text">{en ? 'Historical prices unavailable. Check the data source and retry.' : '暂无可用历史行情，请检查数据源配置后点击“刷新行情”重试。'}</p>
       : <div ref={container} className="w-full overflow-hidden rounded-xl" data-testid="stock-candlestick-canvas" />}
-    <p className="mt-3 text-xs leading-5 text-muted-text">{en ? 'DSA historical prices (automatic source selection)' : 'DSA 历史行情（按已配置数据源自动选择）'}{rows.length ? ` · ${en ? 'Latest' : '最新日期'} ${state.rows[state.rows.length - 1]?.date}` : ''}。{en ? 'Latest available history, not the saved report snapshot. Weekly/monthly bars are aggregated from daily data; the latest period may be incomplete. Volume uses provider units.' : '展示最新可用历史行情，不代表报告生成时的快照；周/月 K 由日线聚合，最近周期可能尚未结束。成交量单位按数据源口径。'}</p>
     <p className="mt-1 text-[10px] text-muted-text">TradingView Lightweight Charts™ · Copyright (с) 2025 TradingView, Inc. <a href="https://www.tradingview.com/" target="_blank" rel="noreferrer" className="underline">TradingView</a></p>
   </section>;
 }

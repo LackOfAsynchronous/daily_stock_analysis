@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- 界面：移除交互式 K 线图下方的历史行情说明文字。
+
 - [新功能] 股票分析页增加交互式 K 线，支持日周月聚合、成交量、MA5/10/20、十字光标与缩放平移，复用历史行情接口并缓存请求。
 
 - [chore] 添加 Lightweight Charts 5.2.1 前端依赖，为交互式 K 线图接入做准备。

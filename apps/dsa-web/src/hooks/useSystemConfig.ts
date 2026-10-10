@@ -28,11 +28,11 @@ type SaveResult = {
 const CATEGORY_DISPLAY_ORDER: Record<string, number> = {
   base: 10,
   ai_model: 20,
-  data_source: 30,
-  notification: 40,
-  system: 50,
-  agent: 55,
+  agent: 30,
+  data_source: 40,
+  notification: 50,
   backtest: 60,
+  system: 70,
   uncategorized: 99,
 };
 

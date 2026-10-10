@@ -2,7 +2,6 @@ export type SystemConfigCategory =
   | 'base'
   | 'data_source'
   | 'ai_model'
-  | 'local_cli'
   | 'notification'
   | 'system'
   | 'agent'

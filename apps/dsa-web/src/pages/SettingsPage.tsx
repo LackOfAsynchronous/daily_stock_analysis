@@ -817,8 +817,9 @@ const SettingsPage: React.FC = () => {
   }, [load]);
 
   useEffect(() => {
-    const requestedCategory = new URLSearchParams(location.search).get('category');
-    if (requestedCategory && (requestedCategory === 'local_cli' || categories.some((category) => category.category === requestedCategory))) {
+    const categoryParam = new URLSearchParams(location.search).get('category');
+    const requestedCategory = categoryParam === 'local_cli' ? 'ai_model' : categoryParam;
+    if (requestedCategory && categories.some((category) => category.category === requestedCategory)) {
       setActiveCategory(requestedCategory);
     }
   }, [categories, location.search, setActiveCategory]);
@@ -859,12 +860,7 @@ const SettingsPage: React.FC = () => {
   for (const name of String(getConfigItem(aiItems, 'LLM_CHANNELS')?.value || '').split(',').map((name) => name.trim()).filter(Boolean)) {
     if (!apiProviderOptions.some((option) => option.value === name)) apiProviderOptions.push({ value: name, label: name + ' · 已配置渠道' });
   }
-  const navigationCategories = categories.flatMap((category) => category.category === 'ai_model' ? [
-    { ...category, category: 'local_cli' as SystemConfigCategory, title: '本机 CLI', fields: category.fields.filter((field) => CLI_KEYS.has(field.key)) },
-    category,
-  ] : [category]);
-  const navigationItems = { ...itemsByCategory, local_cli: aiItems.filter((item) => CLI_KEYS.has(item.key)), ai_model: aiItems.filter((item) => !CLI_KEYS.has(item.key)) };
-  const rawActiveItems = (activeCategory === 'local_cli' ? aiItems : itemsByCategory[activeCategory]) || [];
+  const rawActiveItems = itemsByCategory[activeCategory] || [];
   const rawActiveItemMap = new Map(rawActiveItems.map((item) => [item.key, String(item.value ?? '')]));
   const firstSetupStockCode = parseSetupStockList(getConfigItem(itemsByCategory.base || [], 'STOCK_LIST')?.value)[0] || '';
   const screeningItem = (itemsByCategory.base || []).find((item) => item.key === 'SCREENING_ENABLED');
@@ -1242,7 +1238,7 @@ const SettingsPage: React.FC = () => {
     .map((name) => name.trim().toUpperCase()).filter(Boolean).map((name) => `LLM_${name}_`);
   const apiCommonItems = aiItems.filter((item) => !CLI_KEYS.has(item.key) && !apiProviderForKey(item.key)
     && !(LLM_CHANNEL_KEY_RE.test(item.key) && configuredChannelPrefixes.some((prefix) => item.key.startsWith(prefix))) && (!hasConfiguredChannels || !LLM_CHANNEL_EDITOR_RUNTIME_KEYS.has(item.key)) && item.key !== 'LLM_CHANNELS');
-  const activeConfigPanel = activeCategory === 'local_cli' ? (
+  const localCliPanel = (
     <SettingsSectionCard title="本机 CLI" description="通过本机已安装并登录的工具调用模型；仍可能使用云服务和账号额度。">
       {aiItems.filter((item) => item.key === 'LOCAL_CODEX_MODE').map((item) => <SettingsField key={item.key} item={item} value={item.value} disabled={isSaving || isImportingEnv} onChange={setDraftValue} issues={issueByKey[item.key] || []} />)}
       <GenerationBackendStatusPanel items={generationBackendDraftItems} maskToken={maskToken} disabled={isSaving || isLoading || isImportingEnv} />
@@ -1250,7 +1246,8 @@ const SettingsPage: React.FC = () => {
         {renderConnectionFields(aiItems.filter((item) => CLI_KEYS.has(item.key) && item.key !== 'LOCAL_CODEX_MODE'), undefined, false)}
       </details>
     </SettingsSectionCard>
-  ) : activeCategory === 'data_source' ? (
+  );
+  const activeConfigPanel = activeCategory === 'data_source' ? (
     <SettingsSectionCard title="数据源" description="分别配置行情与新闻来源。选择下拉项只切换配置视图，不改变数据源优先级。">
       <ProviderSelector label="选择数据源" value={selectedDataProvider} onChange={setSelectedDataProvider} disabled={isSaving || isImportingEnv}
         options={DATA_PROVIDERS.map(([value, label]) => ({ value, label }))}>
@@ -1389,8 +1386,8 @@ const SettingsPage: React.FC = () => {
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-[260px_minmax(0,1fr)]">
           <aside className="lg:sticky lg:top-4 lg:self-start">
             <SettingsCategoryNav
-              categories={navigationCategories}
-              itemsByCategory={navigationItems}
+              categories={categories}
+              itemsByCategory={itemsByCategory}
               activeCategory={activeCategory}
               onSelect={setActiveCategory}
             />
@@ -1649,14 +1646,17 @@ const SettingsPage: React.FC = () => {
               </SettingsSectionCard>
             ) : null}
             {activeCategory === 'ai_model' || llmChannelHasDirty || llmChannelIsSaving ? (
-              <div hidden={activeCategory !== 'ai_model'}>
+              <div hidden={activeCategory !== 'ai_model'} className="space-y-6">
+              <div><h2 className="text-xl font-semibold text-foreground">{uiLanguage === 'zh' ? 'AI 模型配置' : 'AI model configuration'}</h2>
+                <p className="mt-1 text-sm text-secondary-text">{uiLanguage === 'zh' ? '统一管理本机 CLI 与 API 服务商。' : 'Manage local CLI and API providers in one place.'}</p></div>
+              {localCliPanel}
               <SettingsSectionCard
                 title="API 服务商"
                 description="先选择服务商，再配置密钥、模型和高级参数。已有密钥保留，选择服务商不会自动切换正在使用的模型。"
               >
                 <p className="rounded-xl bg-[var(--settings-surface-hover)] p-3 text-sm text-secondary-text">
                   {String(getConfigItem(aiItems, 'LOCAL_CODEX_MODE')?.value) === 'true'
-                    ? '当前使用：本机 Codex（全局）。此处只管理 API 配置；如需改用 API，请先在“本机 CLI”关闭全局 Codex。'
+                    ? '当前使用：本机 Codex（全局）。此处只管理 API 配置；如需改用 API，请先在上方“本机 CLI”分区关闭全局 Codex。'
                     : `当前分析生成方式：${getConfigItem(aiItems, 'GENERATION_BACKEND')?.value || 'litellm'}。选中服务商不会自动修改运行方式。`}
                 </p>
                 <ProviderSelector label="选择 API 服务商" value={selectedApiProvider} onChange={setSelectedApiProvider}

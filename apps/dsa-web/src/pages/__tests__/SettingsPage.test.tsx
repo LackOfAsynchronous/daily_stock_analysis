@@ -1326,6 +1326,16 @@ describe('SettingsPage', () => {
     expect(load).toHaveBeenCalledTimes(1);
   });
 
+  it('groups local CLI and API configuration on one AI model page', () => {
+    useSystemConfigMock.mockReturnValue(buildSystemConfigState({ activeCategory: 'ai_model' }));
+    renderSettingsPage();
+    expect(screen.getByRole('heading', { name: 'AI 模型配置' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '本机 CLI' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'API 服务商' })).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: '选择 API 服务商' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'local_cli' })).not.toBeInTheDocument();
+  });
+
   it('passes merged generation backend draft items to the backend status panel', async () => {
     useSystemConfigMock.mockReturnValue(buildSystemConfigState({
       activeCategory: 'ai_model',
@@ -1343,7 +1353,7 @@ describe('SettingsPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'emit llm draft' }));
 
-    useSystemConfigMock.mockReturnValue({ ...useSystemConfigMock.mock.results.at(-1)!.value, activeCategory: 'local_cli' });
+    useSystemConfigMock.mockReturnValue({ ...useSystemConfigMock.mock.results.at(-1)!.value, activeCategory: 'ai_model' });
     page.rerenderSettingsPage();
     const statusItems = await screen.findByTestId('generation-backend-status-items');
     await waitFor(() => {
@@ -1368,7 +1378,7 @@ describe('SettingsPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'save llm channels' }));
 
-    useSystemConfigMock.mockReturnValue({ ...useSystemConfigMock.mock.results.at(-1)!.value, activeCategory: 'local_cli' });
+    useSystemConfigMock.mockReturnValue({ ...useSystemConfigMock.mock.results.at(-1)!.value, activeCategory: 'ai_model' });
     page.rerenderSettingsPage();
     await waitFor(() => {
       expect(screen.getByTestId('generation-backend-status-items')).not.toHaveTextContent('LLM_CHANNELS=draft,backup');
@@ -3042,7 +3052,7 @@ describe('SettingsPage', () => {
       fireEvent.click(await screen.findByRole('button', { name: /primary/i }));
       fireEvent.change(await screen.findByLabelText('渠道名称'), { target: { value: '' } });
       await waitFor(() => expect(beforeUnloadListeners).toHaveLength(1));
-      expect(screen.queryByTestId('generation-backend-status-items')).not.toBeInTheDocument();
+      expect(screen.getByTestId('generation-backend-status-items')).toBeEmptyDOMElement();
 
       useSystemConfigMock.mockReturnValue({ ...configState, activeCategory: 'system' });
       page.rerenderSettingsPage();

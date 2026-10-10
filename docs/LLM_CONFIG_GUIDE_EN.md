@@ -2,7 +2,7 @@
 
 ## Desktop settings: local CLI and API providers
 
-Model connections are split into **Local CLI** and **API providers**:
+Open **AI model configuration** in settings to manage **Local CLI** and **API providers** as two sections on the same page:
 
 - **Local CLI** contains the global Codex switch, runtime status, and connection tests. Backend, timeout, and concurrency controls are under CLI advanced settings. A local CLI can still use cloud services and account quotas.
 - **API providers** starts with a provider selector. Select a built-in provider or an existing custom channel to configure its saved credentials or add a channel. Model assignments and advanced parameters contain primary, chat, vision, and fallback model settings.

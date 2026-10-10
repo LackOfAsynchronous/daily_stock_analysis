@@ -12,6 +12,9 @@ import type { RunFlowSnapshot } from '../../types/runFlow';
 import { getReportText, normalizeReportLanguage } from '../../utils/reportLanguage';
 import { UI_LANGUAGE_STORAGE_KEY } from '../../utils/uiLanguage';
 import HomePage from '../HomePage';
+import { getStockQuote } from '../../api/stockQuote';
+vi.mock('../../api/stockQuote', () => ({ getStockQuote: vi.fn().mockResolvedValue({ stock_code: '600519', stock_name: '贵州茅台', current_price: 1500, open: 1490 }) }));
+vi.mock('../../components/charts/StockCandlestickChart', () => ({ default: ({ stockCode }: { stockCode: string }) => <div data-testid="chart">{stockCode}</div> }));
 
 const navigateMock = vi.fn();
 
@@ -262,6 +265,72 @@ describe('HomePage', () => {
       nextStepKey: null,
       checks: [],
     });
+  });
+
+  it('queries quotes without AI, hides old reports, and reveals only the requested new report', async () => {
+    vi.mocked(historyApi.getList).mockResolvedValue({ total: 1, page: 1, limit: 20, items: [historyItem] });
+    vi.mocked(historyApi.getDetail).mockResolvedValue(historyReport);
+    vi.mocked(analysisApi.analyzeAsync).mockResolvedValue({ taskId: 'quote-task', status: 'pending' });
+    render(<MemoryRouter><HomePage /></MemoryRouter>);
+    expect(await screen.findByText('趋势维持强势')).toBeInTheDocument();
+    const input = screen.getByPlaceholderText('输入股票代码或名称，如 600519、贵州茅台、AAPL');
+    fireEvent.change(input, { target: { value: '600519' } });
+    fireEvent.click(screen.getByRole('button', { name: '查询' }));
+    expect(await screen.findByText('1,500.00')).toBeInTheDocument();
+    expect(await screen.findByTestId('chart')).toHaveTextContent('600519');
+    expect(screen.queryByText('趋势维持强势')).not.toBeInTheDocument();
+    expect(analysisApi.analyzeAsync).not.toHaveBeenCalled();
+    expect(getStockQuote).toHaveBeenCalledWith('600519', expect.any(AbortSignal));
+    fireEvent.click(screen.getByRole('button', { name: 'AI 分析' }));
+    await waitFor(() => expect(analysisApi.analyzeAsync).toHaveBeenCalledWith(expect.objectContaining({ stockCode: '600519', forceRefresh: true })));
+    expect(screen.getByTestId('stock-quote-view')).toBeInTheDocument();
+    act(() => useStockPoolStore.setState({ selectedReport: { ...historyReport, meta: { ...historyReport.meta, id: 9, stockCode: 'AAPL' } } }));
+    expect(screen.getByTestId('stock-quote-view')).toBeInTheDocument();
+    act(() => useStockPoolStore.setState({ selectedReport: { ...historyReport, meta: { ...historyReport.meta, id: 10 } } }));
+    expect(await screen.findByText('趋势维持强势')).toBeInTheDocument();
+    expect(screen.queryByTestId('stock-quote-view')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '追问 AI' })).toBeInTheDocument();
+    fireEvent.change(input, { target: { value: 'MSFT' } });
+    fireEvent.click(screen.getByRole('button', { name: '查询' }));
+    act(() => useStockPoolStore.setState({ selectedReport: { ...historyReport, meta: { ...historyReport.meta, id: 11 } } }));
+    expect(await screen.findByTestId('chart')).toHaveTextContent('MSFT');
+    expect(screen.queryByText('趋势维持强势')).not.toBeInTheDocument();
+    expect(analysisApi.analyzeAsync).toHaveBeenCalledTimes(1);
+  });
+
+  it('opens the completed queried stock even when a different historical report was selected', async () => {
+    vi.mocked(historyApi.getList).mockResolvedValue({ total: 1, page: 1, limit: 20, items: [historyItem] });
+    vi.mocked(historyApi.getDetail).mockResolvedValue(historyReport);
+    vi.mocked(analysisApi.analyzeAsync).mockResolvedValue({ taskId: 'aapl-task', status: 'pending' });
+    render(<MemoryRouter><HomePage /></MemoryRouter>);
+    expect(await screen.findByText('趋势维持强势')).toBeInTheDocument();
+    fireEvent.change(screen.getByPlaceholderText('输入股票代码或名称，如 600519、贵州茅台、AAPL'), { target: { value: 'AAPL' } });
+    fireEvent.click(screen.getByRole('button', { name: '查询' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'AI 分析' }));
+    await waitFor(() => expect(analysisApi.analyzeAsync).toHaveBeenCalled());
+    vi.mocked(historyApi.getList).mockResolvedValue({ total: 2, page: 1, limit: 20, items: [
+      { ...historyItem, id: 20, stockCode: 'AAPL', queryId: 'aapl-task' }, historyItem,
+    ] });
+    vi.mocked(historyApi.getDetail).mockResolvedValue({ ...historyReport, meta: { ...historyReport.meta, id: 20, stockCode: 'AAPL' }, summary: { ...historyReport.summary, analysisSummary: '新股票分析已完成' } });
+    const options = vi.mocked(useTaskStream).mock.calls.at(-1)?.[0];
+    await act(async () => { options?.onTaskCompleted?.({ taskId: 'aapl-task', stockCode: 'AAPL', status: 'completed', progress: 100, reportType: 'detailed', createdAt: '2026-10-11T00:00:00Z' }); });
+    expect(await screen.findByText('新股票分析已完成')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '追问 AI' })).toBeInTheDocument();
+    expect(screen.queryByTestId('stock-quote-view')).not.toBeInTheDocument();
+  });
+
+  it('keeps the chart and optional AI action available when quotes fail and permits quote retry', async () => {
+    vi.mocked(historyApi.getList).mockResolvedValue({ total: 0, page: 1, limit: 20, items: [] });
+    vi.mocked(getStockQuote).mockRejectedValueOnce(new Error('network'));
+    render(<MemoryRouter><HomePage /></MemoryRouter>);
+    fireEvent.change(await screen.findByPlaceholderText('输入股票代码或名称，如 600519、贵州茅台、AAPL'), { target: { value: 'AAPL' } });
+    fireEvent.click(screen.getByRole('button', { name: '查询' }));
+    expect(await screen.findByText(/暂时无法获取报价/)).toBeInTheDocument();
+    expect(await screen.findByTestId('chart')).toHaveTextContent('AAPL');
+    expect(screen.getByRole('button', { name: 'AI 分析' })).toBeEnabled();
+    fireEvent.click(screen.getByRole('button', { name: '刷新报价' }));
+    expect(await screen.findByText('1,500.00')).toBeInTheDocument();
+    expect(analysisApi.analyzeAsync).not.toHaveBeenCalled();
   });
 
   it('renders the dashboard workspace and auto-loads the first report', async () => {
@@ -2511,7 +2580,8 @@ describe('HomePage', () => {
 
     const input = await screen.findByPlaceholderText('输入股票代码或名称，如 600519、贵州茅台、AAPL');
     fireEvent.change(input, { target: { value: '600519' } });
-    fireEvent.click(screen.getByRole('button', { name: '分析' }));
+    fireEvent.click(screen.getByRole('button', { name: '查询' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'AI 分析' }));
 
     await waitFor(() => {
       expect(screen.getByText(/股票 600519 正在分析中/)).toBeInTheDocument();
@@ -2768,7 +2838,8 @@ describe('HomePage', () => {
     fireEvent.change(await screen.findByPlaceholderText('Enter a stock code or name, e.g. 600519, Kweichow Moutai, AAPL'), {
       target: { value: 'AAPL' },
     });
-    fireEvent.click(screen.getByRole('button', { name: 'Analyze' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Search' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'AI analysis' }));
     fireEvent.click(screen.getByRole('button', { name: 'Market review' }));
 
     await waitFor(() => {
@@ -3324,7 +3395,8 @@ describe('HomePage', () => {
 
     const input = screen.getByPlaceholderText('输入股票代码或名称，如 600519、贵州茅台、AAPL');
     fireEvent.change(input, { target: { value: '600519' } });
-    fireEvent.click(screen.getByRole('button', { name: '分析' }));
+    fireEvent.click(screen.getByRole('button', { name: '查询' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'AI 分析' }));
 
     await waitFor(() => {
       expect(analysisApi.analyzeAsync).toHaveBeenCalledWith(expect.objectContaining({

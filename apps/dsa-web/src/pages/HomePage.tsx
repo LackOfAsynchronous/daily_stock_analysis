@@ -9,6 +9,10 @@ import { agentApi, type SkillInfo } from '../api/agent';
 import { systemConfigApi } from '../api/systemConfig';
 import { ApiErrorAlert, Button, Drawer, EmptyState, InlineAlert } from '../components/common';
 import { DashboardStateBlock } from '../components/dashboard';
+import { useStockPoolStore } from '../stores';
+import { StockQuoteView } from '../components/quotes/StockQuoteView';
+import { looksLikeStockCode, validateStockCode } from '../utils/validation';
+import { areStockCodesEquivalent, normalizeStockCode } from '../utils/stockCode';
 import { StockAutocomplete } from '../components/StockAutocomplete';
 import { StockHistoryTrendDrawer } from '../components/history';
 import { ReportMarkdownDrawer } from '../components/report/ReportMarkdownDrawer';
@@ -287,6 +291,10 @@ const HomePage: React.FC = () => {
     [getWatchlistCodeIdentity],
   );
 
+  const [quoteSelection, setQuoteSelection] = useState<{ code: string; name?: string; requested: boolean; previousReportId?: number } | null>(null);
+  const [quoteInputError, setQuoteInputError] = useState('');
+  const quoteSelectionRef = useRef(quoteSelection);
+  useEffect(() => { quoteSelectionRef.current = quoteSelection; }, [quoteSelection]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isSubmittingMarketReview, setIsSubmittingMarketReview] = useState(false);
   const [marketReviewNotice, setMarketReviewNotice] = useState<MarketReviewNotice>(null);
@@ -674,7 +682,17 @@ const HomePage: React.FC = () => {
       });
     }
     setTodayAnalysisRefreshVersion((version) => version + 1);
-  }, []);
+    const selection = quoteSelectionRef.current;
+    if (selection?.requested && areStockCodesEquivalent(selection.code, task.stockCode)) {
+      // The store preserves a different stock's selected report. Explicitly open
+      // the newly completed report only while its quote workspace is still active.
+      const latest = useStockPoolStore.getState().historyItems.find((item) =>
+        item.reportType !== 'market_review' && item.queryId === task.taskId
+        && areStockCodesEquivalent(item.stockCode, selection.code)
+        && item.id !== selection.previousReportId);
+      if (latest) void selectHistoryItem(latest.id, false);
+    }
+  }, [selectHistoryItem]);
 
   const handleDashboardDataRefresh = useCallback(() => {
     setTodayAnalysisRefreshVersion((version) => version + 1);
@@ -838,6 +856,7 @@ const HomePage: React.FC = () => {
 
   const handleHistoryItemClick = useCallback((recordId: number) => {
     clearMarketReviewState();
+    setQuoteSelection(null);
     void selectHistoryItem(recordId);
     setSidebarOpen(false);
   }, [clearMarketReviewState, selectHistoryItem]);
@@ -886,6 +905,41 @@ const HomePage: React.FC = () => {
     [query, selectedAnalysisSkills, submitAnalysis],
   );
 
+  const handleQuoteSearch = useCallback((code = query, name?: string) => {
+    const raw = code.trim();
+    const matches = stockIndexItems.filter((item) =>
+      [item.canonicalCode, item.displayCode, item.nameZh, item.nameEn, ...(item.aliases ?? [])]
+        .some((value) => value?.toUpperCase() === raw.toUpperCase()));
+    const match = matches.length === 1 ? matches[0] : undefined;
+    if (!match && !looksLikeStockCode(raw)) {
+      setQuoteInputError(uiLanguage === 'en' ? 'Select a stock from suggestions or enter a valid ticker.' : '请选择搜索建议中的股票，或输入有效股票代码。');
+      return;
+    }
+    const normalized = normalizeStockCode(match?.canonicalCode ?? validateStockCode(raw).normalized).replace(/\.US$/i, '');
+    setQuoteInputError('');
+    clearError();
+    clearMarketReviewState();
+    closeHistoryTrend();
+    closeMarkdownDrawer();
+    setQuoteSelection({ code: normalized, name: name || match?.nameZh, requested: false });
+    setQuery(normalized);
+    setSidebarOpen(false);
+    dashboardScrollRef.current?.scrollTo?.({ top: 0 });
+  }, [query, stockIndexItems, uiLanguage, clearError, clearMarketReviewState, closeHistoryTrend, closeMarkdownDrawer, setQuery]);
+
+  const quoteReportReady = Boolean(quoteSelection?.requested && selectedReport
+    && selectedReport.meta.reportType !== 'market_review'
+    && areStockCodesEquivalent(quoteSelection.code, selectedReport.meta.stockCode)
+    && selectedReport.meta.id !== undefined && selectedReport.meta.id !== quoteSelection.previousReportId);
+  const showQuote = Boolean(quoteSelection && !quoteReportReady);
+  const quoteAnalyzing = Boolean(isAnalyzing || (quoteSelection?.requested && !error && !duplicateError));
+  const handleQuoteAnalyze = useCallback(() => {
+    if (!quoteSelection || quoteAnalyzing) return;
+    setQuoteSelection({ ...quoteSelection, requested: true, previousReportId: selectedReport?.meta.id });
+    void submitAnalysis({ stockCode: quoteSelection.code, stockName: quoteSelection.name,
+      originalQuery: quoteSelection.code, selectionSource: 'manual', skills: selectedAnalysisSkills, forceRefresh: true });
+  }, [quoteSelection, quoteAnalyzing, selectedReport?.meta.id, selectedAnalysisSkills, submitAnalysis]);
+
   useEffect(() => {
     const state = location.state as StockAnalysisNavigationState | null;
     const stockCode = typeof state?.stockCode === 'string' ? state.stockCode.trim() : '';
@@ -896,9 +950,12 @@ const HomePage: React.FC = () => {
     setQuery(stockCode);
     navigate(location.pathname, { replace: true, state: null });
     if (state?.autoAnalyze) {
+      setQuoteSelection(null);
       handleSubmitAnalysis(stockCode, stockName || undefined, 'import', state.skills);
+    } else {
+      handleQuoteSearch(stockCode, stockName || undefined);
     }
-  }, [handleSubmitAnalysis, location.pathname, location.state, navigate, setQuery]);
+  }, [handleQuoteSearch, handleSubmitAnalysis, location.pathname, location.state, navigate, setQuery]);
 
   const handleAskFollowUp = useCallback(() => {
     if (selectedReport?.meta.id === undefined || selectedReport.meta.reportType === 'market_review') {
@@ -1070,6 +1127,7 @@ const HomePage: React.FC = () => {
   );
 
   const handleTriggerMarketReview = useCallback(async () => {
+    setQuoteSelection(null);
     setIsSubmittingMarketReview(true);
     setMarketReviewNotice(null);
     setMarketReviewError(null);
@@ -1472,9 +1530,9 @@ const HomePage: React.FC = () => {
           watchlistAnalyzedTodayCount={watchlistAnalyzedTodayCount}
           historyItems={mergedStockBarItems}
           isLoadingHistory={isLoadingStockBar}
-          selectedStockCode={selectedReport?.meta.stockCode}
-          selectedAssetType={selectedReport?.meta.assetType ?? null}
-          selectedRecordId={selectedReport?.meta.id}
+          selectedStockCode={showQuote ? quoteSelection?.code : selectedReport?.meta.stockCode}
+          selectedAssetType={showQuote ? null : selectedReport?.meta.assetType ?? null}
+          selectedRecordId={showQuote ? undefined : selectedReport?.meta.id}
           onHistoryItemClick={handleHistoryItemClick}
           onDeleteStock={handleDeleteStock}
           isDeleting={isDeletingStock}
@@ -1502,6 +1560,8 @@ const HomePage: React.FC = () => {
       selectedReport?.meta.id,
       selectedReport?.meta.assetType,
       selectedReport?.meta.stockCode,
+      showQuote,
+      quoteSelection?.code,
       sidebarWorkspaceTab,
       todayAnalysisItems,
       watchlistAnalyzedTodayCount,
@@ -1535,12 +1595,9 @@ const HomePage: React.FC = () => {
               <div className="relative min-w-0 flex-1">
                 <StockAutocomplete
                   value={query}
-                  onChange={setQuery}
-                  onSubmit={(stockCode, stockName, selectionSource) => {
-                    handleSubmitAnalysis(stockCode, stockName, selectionSource);
-                  }}
+                  onChange={(value) => { setQuery(value); setQuoteInputError(''); }}
+                  onSubmit={(stockCode, stockName) => handleQuoteSearch(stockCode, stockName)}
                   placeholder={t('home.placeholder')}
-                  disabled={isAnalyzing}
                   className={inputError ? 'border-danger/50' : undefined}
                 />
               </div>
@@ -1627,25 +1684,17 @@ const HomePage: React.FC = () => {
               </Button>
               <button
                 type="button"
-                onClick={() => handleSubmitAnalysis()}
-                disabled={!query || isAnalyzing}
+                onClick={() => handleQuoteSearch()}
+                disabled={!query.trim()}
                 className="btn-primary flex h-10 flex-1 items-center justify-center gap-1.5 whitespace-nowrap md:flex-none"
               >
-                {isAnalyzing ? (
-                  <>
-                    <svg className="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                    </svg>
-                    {t('home.analyzing')}
-                  </>
-                ) : (
-                  t('home.analyze')
-                )}
+                {uiLanguage === 'en' ? 'Search' : '查询'}
               </button>
             </div>
           </div>
         </header>
+
+        {quoteInputError ? <div className="px-3 pb-2 md:px-4"><InlineAlert variant="warning" title={uiLanguage === 'en' ? 'Stock search' : '股票查询'} message={quoteInputError} /></div> : null}
 
         {inputError || (duplicateError && duplicateBannerVisible) ? (
           <div className="px-3 pb-2 md:px-4">
@@ -1762,7 +1811,12 @@ const HomePage: React.FC = () => {
                 onDismiss={clearError}
               />
             ) : null}
-            {!marketReviewReport && isLoadingReport ? (
+            {showQuote && quoteSelection ? (
+              <div className="max-w-4xl space-y-4 pb-8">
+                <StockQuoteView key={quoteSelection.code} stockCode={quoteSelection.code} stockName={quoteSelection.name}
+                  onAnalyze={handleQuoteAnalyze} analyzing={quoteAnalyzing} />
+              </div>
+            ) : !marketReviewReport && isLoadingReport ? (
               <div className="flex h-full flex-col items-center justify-center">
                 <DashboardStateBlock title={t('home.loadingReport')} loading />
               </div>

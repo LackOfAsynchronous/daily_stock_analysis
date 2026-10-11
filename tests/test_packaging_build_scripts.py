@@ -186,7 +186,7 @@ def test_pyinstaller_runtime_hook_disables_incompatible_nltk_guard(
     assert os.environ["NLTK_DISABLE_IMPORT_SECURITY"] == "1"
 
 
-def test_macos_unsigned_packaging_contract_is_explicit() -> None:
+def test_macos_adhoc_packaging_contract_is_explicit() -> None:
     package = json.loads(
         _read_text(REPO_ROOT / "apps" / "dsa-desktop" / "package.json")
     )
@@ -202,9 +202,9 @@ def test_macos_unsigned_packaging_contract_is_explicit() -> None:
     assert package["build"]["afterPack"] == "scripts/afterPackMacos.js"
     assert "context.electronPlatformName !== 'darwin'" in after_pack_hook
     assert "'macos-signature-audit.sh'" in after_pack_hook
-    assert "execFileSync('bash', [auditScript, 'normalize', appPath]" in after_pack_hook
+    assert "execFileSync('bash', [auditScript, 'adhoc', appPath]" in after_pack_hook
     normalize_call = (
-        'bash "${SCRIPT_DIR}/macos-signature-audit.sh" normalize "${packaged_root}"'
+        'bash "${SCRIPT_DIR}/macos-signature-audit.sh" adhoc "${packaged_root}"'
     )
     assert normalize_call in backend_script
     assert backend_script.index(normalize_call) < backend_script.index(
@@ -213,7 +213,7 @@ def test_macos_unsigned_packaging_contract_is_explicit() -> None:
     assert 'bash "${SCRIPT_DIR}/macos-signature-audit.sh" check "${app_path}"' in (
         desktop_script
     )
-    assert "verify_unsigned_dmg" in desktop_script
+    assert "verify_adhoc_dmg" in desktop_script
     assert "code has no resources but signature indicates they must be present" in (
         desktop_script
     )

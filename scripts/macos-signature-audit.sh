@@ -2,13 +2,13 @@
 set -euo pipefail
 
 usage() {
-  echo "Usage: $0 <normalize|check> <artifact-path>" >&2
+  echo "Usage: $0 <normalize|check|adhoc> <artifact-path>" >&2
 }
 
 mode="${1:-}"
 artifact_root="${2:-}"
 
-if [[ "${mode}" != "normalize" ]] && [[ "${mode}" != "check" ]]; then
+if [[ "${mode}" != "normalize" ]] && [[ "${mode}" != "check" ]] && [[ "${mode}" != "adhoc" ]]; then
   usage
   exit 2
 fi
@@ -23,6 +23,40 @@ fi
 if ! command -v file >/dev/null 2>&1; then
   echo "ERROR: file is required for macOS signature auditing." >&2
   exit 2
+fi
+
+# Apple Silicon requires valid signatures on executable code, including dylibs
+# in PyInstaller's resource tree that codesign --deep does not visit.
+if [[ "${mode}" == "adhoc" ]]; then
+  python3 - "${artifact_root}" <<'PY_SIGN'
+import subprocess
+import sys
+from pathlib import Path
+
+root = Path(sys.argv[1]).resolve()
+magic_numbers = {
+    bytes.fromhex(value) for value in (
+        "feedface", "cefaedfe", "feedfacf", "cffaedfe",
+        "cafebabe", "bebafeca", "cafebabf", "bfbafeca",
+    )
+}
+count = 0
+candidates = [root] if root.is_file() else root.rglob("*")
+for candidate in candidates:
+    if candidate.is_symlink() or not candidate.is_file():
+        continue
+    with candidate.open("rb") as handle:
+        is_macho = handle.read(4) in magic_numbers
+    if not is_macho:
+        continue
+    subprocess.run(["codesign", "--force", "--sign", "-", str(candidate)], check=True)
+    count += 1
+if root.suffix == ".app":
+    subprocess.run(["codesign", "--force", "--deep", "--sign", "-", str(root)], check=True)
+    subprocess.run(["codesign", "--verify", "--deep", "--strict", str(root)], check=True)
+print(f"macOS ad-hoc signing complete: signed={count}")
+PY_SIGN
+  exit 0
 fi
 
 checked_count=0

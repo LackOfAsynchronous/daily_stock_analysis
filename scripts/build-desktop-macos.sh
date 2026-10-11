@@ -7,26 +7,27 @@ ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 export CSC_IDENTITY_AUTO_DISCOVERY="false"
 export ELECTRON_BUILDER_CACHE="${ROOT_DIR}/.electron-builder-cache"
 
-verify_expected_unsigned_app() {
+verify_adhoc_app() {
   local app_path="$1"
   local signature_details=""
   local assessment_output=""
 
   bash "${SCRIPT_DIR}/macos-signature-audit.sh" check "${app_path}"
 
-  if signature_details="$(codesign -d "${app_path}" 2>&1)"; then
-    echo "ERROR: expected an unsigned application bundle, but a signature was found: ${app_path}"
-    echo "${signature_details}" >&2
+  codesign --verify --deep --strict "${app_path}"
+  if ! "${app_path}/Contents/Resources/backend/stock_analysis/stock_analysis" --help >/tmp/dsa-app-backend-help.log 2>&1; then
+    echo "ERROR: signed application backend cannot start." >&2
+    cat /tmp/dsa-app-backend-help.log >&2
     exit 1
   fi
-  if [[ "${signature_details}" != *"code object is not signed at all"* ]]; then
-    echo "ERROR: application bundle has an unreadable or invalid signature: ${app_path}"
-    echo "${signature_details}" >&2
+  signature_details="$(codesign -dv --verbose=4 "${app_path}" 2>&1)"
+  if [[ "${signature_details}" != *"Signature=adhoc"* ]]; then
+    echo "ERROR: expected a valid ad-hoc application signature: ${app_path}" >&2
     exit 1
   fi
 
   if assessment_output="$(spctl --assess --type execute --verbose=4 "${app_path}" 2>&1)"; then
-    echo "WARNING: Gatekeeper accepted an explicitly unsigned application: ${app_path}"
+    echo "WARNING: Gatekeeper accepted an ad-hoc signed application: ${app_path}"
     echo "${assessment_output}"
     return 0
   fi
@@ -39,13 +40,13 @@ verify_expected_unsigned_app() {
   echo "WARNING: Gatekeeper rejection is expected because this build has no Apple Developer signature."
 }
 
-verify_unsigned_dmg() {
+verify_adhoc_dmg() {
   local dmg_path="$1"
   local mount_dir=""
   local mounted_app=""
   local mounted=false
 
-  mount_dir="$(mktemp -d "${TMPDIR:-/tmp}/dsa-unsigned-dmg.XXXXXX")"
+  mount_dir="$(mktemp -d "${TMPDIR:-/tmp}/dsa-adhoc-dmg.XXXXXX")"
   cleanup_mount() {
     if [[ "${mounted}" == "true" ]]; then
       hdiutil detach "${mount_dir}" >/dev/null || true
@@ -62,7 +63,7 @@ verify_unsigned_dmg() {
     exit 1
   fi
 
-  verify_expected_unsigned_app "${mounted_app}"
+  verify_adhoc_app "${mounted_app}"
 
   hdiutil detach "${mount_dir}" >/dev/null
   mounted=false
@@ -167,8 +168,8 @@ if [[ "${#dmg_candidates[@]}" -ne 1 ]]; then
   exit 1
 fi
 
-verify_expected_unsigned_app "${app_candidates[0]}"
-verify_unsigned_dmg "${dmg_candidates[0]}"
+verify_adhoc_app "${app_candidates[0]}"
+verify_adhoc_dmg "${dmg_candidates[0]}"
 
 popd >/dev/null
 

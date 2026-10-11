@@ -366,3 +366,5 @@ Windows 分发现在有两种方式：
 ## Fork 定制发行版
 
 v3.32.1 的全部定制功能、各平台下载方式与配置边界见 [发行说明](releases/v3.32.1.md)。桌面更新仓库从 `apps/dsa-desktop/package.json` 的 GitHub publish 元数据读取，本 fork 指向 `LackOfAsynchronous/daily_stock_analysis`。安装包由 Git 标签在对应系统的 GitHub Actions runner 上构建，附 SHA-256 校验值，不打包本机私有配置或投资记忆。
+
+Fork 的 macOS 构建使用 ad-hoc 临时签名：逐一签名 App 与 PyInstaller 内所有 Mach-O 文件，再签名应用包。`codesign --deep` 不会自动覆盖资源目录里的 Python 动态库，因此不能替代逐文件签名。最终 DMG 必须通过签名检查；临时签名不等同 Apple Developer 认证或公证。

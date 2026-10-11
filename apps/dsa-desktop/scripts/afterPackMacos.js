@@ -31,7 +31,7 @@ exports.default = async function afterPackMacos(context) {
     'macos-signature-audit.sh',
   )
 
-  execFileSync('bash', [auditScript, 'normalize', appPath], {
+  execFileSync('bash', [auditScript, 'adhoc', appPath], {
     stdio: 'inherit',
   })
 }

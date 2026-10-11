@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- [chore] 为 fork 发布 v3.32.1 macOS/Windows 定制安装包，更新源指向 fork，附完整定制记录与 SHA-256 校验值。
+
 - [改进] 桌面主导航收窄并填满可用内宽，使菜单与品牌在边框内水平居中。
 
 - [新功能] 首页查询股票先显示基本行情与交互式 K 线；点击 AI 分析后才生成完整报告，完成后可追问 AI。

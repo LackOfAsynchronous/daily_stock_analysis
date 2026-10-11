@@ -238,10 +238,18 @@ jobs:
       - name: Show release assets
         run: ls -lah dist/release-assets
 
+      - name: Generate download checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd dist/release-assets
+          sha256sum *.dmg *.exe *.zip *.blockmap latest.yml > SHA256SUMS.txt
+
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.RELEASE_TAG }}
+          draft: false
           generate_release_notes: false
           files: dist/release-assets/*
           fail_on_unmatched_files: true

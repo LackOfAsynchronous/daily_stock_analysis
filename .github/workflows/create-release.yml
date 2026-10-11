@@ -23,7 +23,11 @@ jobs:
           RELEASE_TAG: ${{ github.ref_name }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          python .github/scripts/build_release_notes.py /tmp/release_body.md
+          if [[ -f "docs/releases/${RELEASE_TAG}.md" ]]; then
+            cp "docs/releases/${RELEASE_TAG}.md" /tmp/release_body.md
+          else
+            python .github/scripts/build_release_notes.py /tmp/release_body.md
+          fi
           echo "tag=${RELEASE_TAG}" >> "$GITHUB_OUTPUT"
 
       - name: Create GitHub Release
@@ -32,6 +36,6 @@ jobs:
           tag_name: ${{ steps.release_notes.outputs.tag }}
           name: ${{ steps.release_notes.outputs.tag }}
           body_path: /tmp/release_body.md
-          draft: false
+          draft: true
           prerelease: false
           generate_release_notes: false

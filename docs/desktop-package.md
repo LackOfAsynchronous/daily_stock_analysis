@@ -362,3 +362,7 @@ Windows 分发现在有两种方式：
 ## 桌面导航布局
 
 桌面主导航采用 128px 宽侧栏，菜单容器填满侧栏内宽，品牌与菜单项水平居中，避免右侧出现多余留白。移动端继续使用抽屉导航。此布局说明无英文对应专题。
+
+## Fork 定制发行版
+
+v3.32.1 的全部定制功能、各平台下载方式与配置边界见 [发行说明](releases/v3.32.1.md)。桌面更新仓库从 `apps/dsa-desktop/package.json` 的 GitHub publish 元数据读取，本 fork 指向 `LackOfAsynchronous/daily_stock_analysis`。安装包由 Git 标签在对应系统的 GitHub Actions runner 上构建，附 SHA-256 校验值，不打包本机私有配置或投资记忆。

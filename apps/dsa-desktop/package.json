@@ -1,6 +1,6 @@
 {
   "name": "daily-stock-analysis-desktop",
-  "version": "3.21.0",
+  "version": "3.32.1",
   "private": true,
   "main": "main.js",
   "scripts": {
@@ -43,7 +43,7 @@
       "publish": [
         {
           "provider": "github",
-          "owner": "ZhuLinsen",
+          "owner": "LackOfAsynchronous",
           "repo": "daily_stock_analysis"
         }
       ]

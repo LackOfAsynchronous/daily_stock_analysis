@@ -348,7 +348,7 @@ describe('generation backend settings help contract', () => {
 describe('generation backend status panel i18n contract', () => {
   it('keeps the new status panel copy localized in both UI languages', () => {
     expect(UI_TEXT.zh['settings.generationBackendStatus']).toBe('生成后端状态');
-    expect(UI_TEXT.zh['settings.generationBackendSmokeTest']).toBe('JSON 冒烟测试');
+    expect(UI_TEXT.zh['settings.generationBackendSmokeTest']).toBe('测试模型连接');
     expect(UI_TEXT.zh['settings.generationBackendPrimary']).toBe('主后端');
     expect(UI_TEXT.zh['settings.generationBackendFallback']).toBe('备用后端');
     expect(UI_TEXT.zh['settings.generationBackendGenerationOnly']).toBe('仅生成');

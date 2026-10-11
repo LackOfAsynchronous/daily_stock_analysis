@@ -252,9 +252,9 @@ describe('App routing behavior', () => {
       expect(screen.getByRole('button', { name: '返回首页' })).toBeInTheDocument();
 
       chatPageShouldThrow.value = false;
-      fireEvent.click(screen.getByRole('link', { name: '持仓' }));
+      fireEvent.click(screen.getByRole('link', { name: '回测' }));
 
-      expect(await screen.findByTestId('portfolio-page')).toBeInTheDocument();
+      expect(await screen.findByTestId('backtest-page')).toBeInTheDocument();
       expect(screen.queryByRole('heading', { name: '页面加载失败' })).not.toBeInTheDocument();
     } finally {
       consoleError.mockRestore();

@@ -41,8 +41,12 @@ magic_numbers = {
     )
 }
 count = 0
-candidates = [root] if root.is_file() else root.rglob("*")
+# Sign nested code before its containing bundle. Electron x64 ships with
+# unsigned frameworks; signing the main executable first validates them too soon.
+candidates = [root] if root.is_file() else sorted(root.rglob("*"), key=lambda p: len(p.parts), reverse=True)
 for candidate in candidates:
+    if root.suffix == ".app" and candidate.parent == root / "Contents" / "MacOS":
+        continue  # The final --deep operation signs the outer app executable.
     if candidate.is_symlink() or not candidate.is_file():
         continue
     with candidate.open("rb") as handle:

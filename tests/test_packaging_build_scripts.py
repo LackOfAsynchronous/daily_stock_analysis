@@ -344,3 +344,40 @@ def test_macos_pyinstaller_command_preserves_real_bash_argv() -> None:
     assert not any("（" in arg or "）" in arg for arg in argv)
     data_paths = [argv[i + 1] for i, arg in enumerate(argv[:-1]) if arg == "--add-data"]
     assert "src/services/screening/strategies:src/services/screening/strategies" in data_paths
+
+
+def test_adhoc_signs_nested_code_before_outer_app(tmp_path: Path) -> None:
+    fake_bin = tmp_path / "bin"
+    fake_bin.mkdir()
+    app = tmp_path / "Example.app"
+    main = app / "Contents/MacOS/Example"
+    framework = app / "Contents/Frameworks/Example.framework/Versions/A/Example"
+    for candidate in (main, framework):
+        candidate.parent.mkdir(parents=True, exist_ok=True)
+        candidate.write_bytes(bytes.fromhex("cffaedfe") + b"fixture")
+    (app / "README").write_text("not executable")
+    codesign = fake_bin / "codesign"
+    codesign.write_text("""#!/usr/bin/env bash
+set -eu
+candidate="${@: -1}"
+if [[ "$1" == "--force" ]]; then
+  if [[ "$candidate" == *"/Contents/MacOS/Example" ]]; then
+    echo "outer executable must be signed through its bundle" >&2
+    exit 1
+  fi
+  if [[ "$candidate" == *".app" ]]; then
+    test -f "$candidate/Contents/Frameworks/Example.framework/Versions/A/Example.signed"
+  fi
+  touch "$candidate.signed"
+fi
+""")
+    codesign.chmod(0o755)
+    result = subprocess.run(
+        ["bash", str(REPO_ROOT / "scripts/macos-signature-audit.sh"), "adhoc", str(app)],
+        env={**os.environ, "PATH": str(fake_bin) + os.pathsep + os.environ["PATH"]},
+        capture_output=True, text=True,
+    )
+    assert result.returncode == 0, result.stderr
+    assert Path(str(app) + ".signed").exists()
+    assert not Path(str(main) + ".signed").exists()
+    assert not (app / "README.signed").exists()

@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-- [修复] macOS App、内置 Python 和动态库统一执行临时签名，解决未签名程序被终止和 Python 动态库加载失败。
+- [修复] macOS App、内置 Python 和动态库按由内向外的顺序执行临时签名，解决未签名程序被终止和 Python 动态库加载失败。
 
 - [修复] 桌面更新仓库使用保留的运行时元数据，避免安装包删除构建配置后启动失败。
 

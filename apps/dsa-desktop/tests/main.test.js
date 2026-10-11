@@ -57,6 +57,9 @@ function loadMainModule(t, options = {}) {
   };
 
   Module._load = function patchedLoad(request, parent, isMain) {
+    if (request === './package.json' && options.packageJson) {
+      return options.packageJson;
+    }
     if (request === 'electron') {
       return {
         app: fakeApp,
@@ -103,6 +106,18 @@ function loadMainModule(t, options = {}) {
   mainModule.__getIpcMainHandler = (channel) => ipcMainHandlers.get(channel);
   return mainModule;
 }
+
+test('packaged main starts after electron-builder removes build configuration', (t) => {
+  const packageJson = JSON.parse(JSON.stringify(require('../package.json')));
+  const publish = packageJson.build.win.publish.find((entry) => entry.provider === 'github');
+  assert.deepEqual(packageJson.dsaReleaseRepository, { owner: publish.owner, repo: publish.repo });
+  delete packageJson.build;
+  delete packageJson.scripts;
+  delete packageJson.devDependencies;
+  const mainModule = loadMainModule(t, { packageJson });
+  assert.equal(mainModule.GITHUB_OWNER, publish.owner);
+  assert.equal(mainModule.GITHUB_REPO, publish.repo);
+});
 
 test('parseSemver accepts stable and prerelease tags', (t) => {
   const mainModule = loadMainModule(t);

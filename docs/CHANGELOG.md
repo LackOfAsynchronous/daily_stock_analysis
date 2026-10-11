@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- [修复] 桌面更新仓库使用保留的运行时元数据，避免安装包删除构建配置后启动失败。
+
 - [chore] 为 fork 发布 v3.32.1 macOS/Windows 定制安装包，更新源指向 fork，附完整定制记录与 SHA-256 校验值。
 
 - [改进] 桌面主导航收窄并填满可用内宽，使菜单与品牌在边框内水平居中。

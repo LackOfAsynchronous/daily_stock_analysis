@@ -63,5 +63,9 @@
   "overrides": {
     "builder-util-runtime": "9.7.0",
     "js-yaml": "4.3.1"
+  },
+  "dsaReleaseRepository": {
+    "owner": "LackOfAsynchronous",
+    "repo": "daily_stock_analysis"
   }
 }

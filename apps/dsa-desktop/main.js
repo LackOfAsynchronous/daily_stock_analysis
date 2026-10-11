@@ -27,7 +27,7 @@ function resolveWindowBackgroundColor() {
 const isWindows = process.platform === 'win32';
 const isMac = process.platform === 'darwin';
 const appRootDev = path.resolve(__dirname, '..', '..');
-const releaseRepository = require('./package.json').build.win.publish.find((entry) => entry.provider === 'github');
+const releaseRepository = require('./package.json').dsaReleaseRepository;
 const GITHUB_OWNER = releaseRepository.owner;
 const GITHUB_REPO = releaseRepository.repo;
 const RELEASES_PAGE_URL = `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}/releases`;

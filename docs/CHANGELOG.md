@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- [改进] 桌面主导航收窄并填满可用内宽，使菜单与品牌在边框内水平居中。
+
 - [新功能] 首页查询股票先显示基本行情与交互式 K 线；点击 AI 分析后才生成完整报告，完成后可追问 AI。
 
 - [改进] 移除桌面与移动主导航中的持仓入口。
